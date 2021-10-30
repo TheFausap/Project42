@@ -3,7 +3,7 @@
 #include <string.h>
 #include <ctype.h>
 
-#define MEMSIZE 65535
+#define MEMSIZE 32767
 #define DATAORIG 2048
 
 #define VSHIFT 20
@@ -21,8 +21,15 @@ typedef struct {
 	int sz;
 } VE;
 
+typedef struct {
+	char sym[10];
+	int a;                /* position in the DATA MEM */
+} LE;
+
 VE var_area[50] = { 0,0,0 };
+LE labels[50] = { 0,0 };
 int var_count = 0;
+int lab_count = 0;
 
 enum {END=0,STO,LDM,JMP,DEC,INC,JNZ,CMP};
 #define LSS 0
@@ -51,6 +58,29 @@ int get_var(char* s) {
 	exit(-20);
 }
 
+int get_lab(char* s) {
+	for (int i = 0; i < lab_count; i++)
+		if (strcmp(s, labels[i].sym) == 0) {
+			return labels[i].a;
+		}
+	return -1;
+}
+
+int lab(char* s, int loc) {
+	int i;
+
+	if ((i=get_lab(s)) < 0) {
+		strncpy(labels[lab_count].sym, s, 9);
+		labels[lab_count].a = loc;
+		lab_count++;
+		return (lab_count - 1);
+	}
+	else {
+		labels[i].a = loc;
+		return i;
+	}
+}
+
 void ldm(long long int d, long long int s) {
 	mem[D(d)]=mem[D(s)];
 }
@@ -60,11 +90,15 @@ void sto(int a, long long int v) {
 		mem[a] = (ind[pc] == 1) ? mem[v] : v;
 	else
 		mem[D(a)] = v;
-	
 }
 
-void jmp(int a) {
-	pc = a - 1;
+void jmp(int ad) {
+	if (ind[pc]) {
+		pc = labels[ad].a - 1;
+	}
+	else {
+		pc = ad - 1;
+	}
 }
 
 void dec(int a, long long int v) {
@@ -72,7 +106,6 @@ void dec(int a, long long int v) {
 		mem[a] -= (ind[pc] == 1) ? mem[v] : v;
 	else
 		mem[D(a)] -= v;
-	
 }
 
 void inc(int a, long long int v) {
@@ -80,7 +113,6 @@ void inc(int a, long long int v) {
 		mem[a] += (ind[pc] == 1) ? mem[v] : v;
 	else
 		mem[D(a)] += v;
-	
 }
 
 void end() {
@@ -109,9 +141,15 @@ void cmp(long long int l1, long long int l2, int m) {
 	flags = flags << 2;
 }
 
-void jnz(int a) {
-	if ((flags >> 2) & 1)
-		pc = a - 1;
+void jnz(int ad) {
+	if ((flags >> 2) & 1) {
+		if (ind[pc]) {
+			pc = labels[ad].a - 1;
+		}
+		else {
+			pc = ad - 1;
+		}
+	}
 }
 
 void pmem(int sz) {
@@ -165,7 +203,7 @@ long long int enc(int i, int m, long long int v) {
 	long long int* ad = malloc(sizeof(long long int));
 	long long int r = 0;
 	r += (long long int)v << VSHIFT;
-	r += (short) m << 3;
+	r += (short) (m << 3);
 	r += i;
 	ad[0] = r;
 	return *ad;
@@ -174,18 +212,23 @@ long long int enc(int i, int m, long long int v) {
 long long int enc1(int i, int m) {
 	long long int* ad = malloc(sizeof(long long int));
 	long long int r = 0;
-	r += (short) m << 3;
+	r += (short) (m << 3);
 	r += i;
 	ad[0] = r;
 	return *ad;
 }
 
+/* rudimental assembler */
 void loadp() {
 	FILE* f;
 	int e;
 	int len = 80;
 	char* l = malloc(len);
 	char* tok = NULL;
+	char* ltok = NULL;
+	char* labline = malloc(20);
+	char* instr = malloc(20);
+	char* ipos = NULL;
 	char* m = malloc(80);
 	int m1 = 0;
 	char* v = malloc(80);
@@ -200,10 +243,22 @@ void loadp() {
 		printf("LINE\t(%d):\t%s", loc, l);
 	
 		/* get the first token */
+		/* OPCODE */
 		tok = strtok(l , "|");
+		strcpy(instr, tok);
 
-		if (strcmp(tok, "END") == 0) break;
-		else if (strcmp(tok, "STO") == 0) {
+		if ((ipos=strstr(instr, ":")) != NULL) {
+			strcpy(labline, instr);
+			char* res = strchr(labline, ':');
+			strcpy(instr,res);
+			labline[(res - labline)]='\0';
+			memmove(instr, instr + 1, strlen(instr));
+			lab(labline, loc);
+		}
+
+		if (strcmp(instr, "END") == 0) 
+			break;
+		else if (strcmp(instr, "STO") == 0) {
 			/* walk through other tokens */
 			tok = strtok(NULL, "|");
 			strcpy(m, tok);
@@ -225,7 +280,7 @@ void loadp() {
 
 			mem[loc] = enc(STO, m1, v1);
 		}
-		else if (strcmp(tok, "LDM") == 0) {
+		else if (strcmp(instr, "LDM") == 0) {
 			/* walk through other tokens */
 			/* LDM dest,src (dest can be memory loc or var) */
 			tok = strtok(NULL, "|");
@@ -246,7 +301,7 @@ void loadp() {
 				v1 = atoi(v);
 			mem[loc] = enc(LDM, m1, v1);
 		}
-		else if (strcmp(tok, "DEC") == 0) {
+		else if (strcmp(instr, "DEC") == 0) {
 			/* walk through other tokens */
 			tok = strtok(NULL, "|");
 			strcpy(m, tok);
@@ -267,7 +322,7 @@ void loadp() {
 				v1 = atoi(v);
 			mem[loc] = enc(DEC, m1, v1);
 		}
-		else if (strcmp(tok, "INC") == 0) {
+		else if (strcmp(instr, "INC") == 0) {
 			/* walk through other tokens */
 			tok = strtok(NULL, "|");
 			strcpy(m, tok);
@@ -288,19 +343,47 @@ void loadp() {
 				v1 = atoi(v);
 			mem[loc] = enc(INC, m1, v1);
 		}
-		else if (strcmp(tok, "JMP") == 0) {
+		else if (strcmp(instr, "JMP") == 0) {
 			/* walk through other tokens */
 			tok = strtok(NULL, "|");
 			strcpy(m, tok);
-			mem[loc] = enc1(JMP, atoi(m));
+			if (isalpha(m[0])) {
+				m[strlen(m) - 1] = '\0';
+				if (get_lab(m) < 0) {
+					m1 = lab(m, -1); /* create a place holder */
+					                 /* m1 is the location in array */
+					ind[loc] = 1;
+				}
+				else {
+					m1 = get_lab(m); /* label already present */
+									 /* m1 is the mem address */
+				}
+			}
+			else
+				m1 = atoi(m);
+			mem[loc] = enc1(JMP, m1);
 		}
-		else if (strcmp(tok, "JNZ") == 0) {
+		else if (strcmp(instr, "JNZ") == 0) {
 			/* walk through other tokens */
 			tok = strtok(NULL, "|");
 			strcpy(m, tok);
-			mem[loc] = enc1(JNZ, atoi(m));
+			if (isalpha(m[0])) {
+				m[strlen(m) - 1] = '\0';
+				if (get_lab(m) < 0) {
+					m1 = lab(m, -1); /* create a place holder */
+									 /* m1 is the location in array */
+					ind[loc] = 1;
+				}
+				else {
+					m1 = get_lab(m); /* label already present */
+									 /* m1 is the mem address */
+				}
+			}
+			else
+				m1 = atoi(m);
+			mem[loc] = enc1(JNZ, m1);
 		}
-		else if (strcmp(tok, "CMP") == 0) {
+		else if (strcmp(instr, "CMP") == 0) {
 			/* uses r15 registry. destroyed each time CMP is called */
 			/* walk through other tokens */
 			r15 = 0;
@@ -335,7 +418,7 @@ void loadp() {
 				printf("Syntax Error in CMP\n"); exit(-12);
 			}
 		}
-		else if (strcmp(tok, "VAR") == 0) {
+		else if (strcmp(instr, "VAR") == 0) {
 			/* pseudo instruction */
 			tok = strtok(NULL, "|");
 			strcpy(m, tok);
