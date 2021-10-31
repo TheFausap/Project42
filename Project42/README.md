@@ -66,6 +66,10 @@ using mostly a standard mnemonic naming convention. More on this later.
 
 Each instruction as different addressing method, described also later.
 
+There is, also, one pseudo-instruction:
+
+- VAR
+
 ## Assembler syntax
 
 The source file is a text file, formatted in this way:
@@ -103,6 +107,18 @@ Below the symbols mean:
 - `<V>` variable name
 - `<L>` label
 - `<MD>` mode of comparison
+
+### Pseudo-instruction : VAR
+
+The format is
+
+```
+VAR|<V>|<N>
+```
+
+It allocates `<N>` contigous memory addresses and created a reference to the name specified by `<V>`.
+
+Must be at the beginning of the program.
 
 ### Instruction : STO
 
