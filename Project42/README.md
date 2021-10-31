@@ -255,6 +255,7 @@ VAR|M|1
 STO|M|5
 STO|C|0
 L1:STO|AB#C|10
+DEC|AB#C|2
 INC|C|1
 CMP|C|M|GTE
 JNZ|L2
@@ -262,5 +263,5 @@ JMP|L1
 L2:END
 ```
 
-In this code, the `#` operator is used alongside a variable. This loop fills the first 5 memory location pointed by `AB`, with value 10.
+In this code, the `#` operator is used alongside a variable. This loop fills the first 5 memory location pointed by `AB`, with value 8.
 
