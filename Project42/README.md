@@ -222,7 +222,7 @@ END
 
 `MAXITER` is the n-th fibonacci number we want to evaluate. The final result will be stored in the `B` variable.
 
-Of course there are no biginteger here, so the limit is the `long long int` range.
+Of course there are no `bigInteger` here, so the limit is the `long long int` range.
 
 The same program is stored in the `test.asm` file.
 
