@@ -14,6 +14,7 @@ int pc = 0;
 int r15 = 0;
 char flags = 0;
 char ind[DATAORIG] = { 0 };
+int indexes[DATAORIG] = { 0 };
 
 typedef struct {
 	char sym[10];
@@ -41,6 +42,9 @@ enum {END=0,STO,LDM,JMP,DEC,INC,JNZ,CMP};
 
 #define D(x) DATAOFF+(x)
 #define D1(x) DATAORIG+(x)
+
+#define DH(x) memmove((x), (x) + 1, strlen((x)))
+#define DT(x) (x)[strlen((x)) - 1] = '\0'
 
 void var(char* s, int sz) {
 	strncpy(var_area[var_count].sym, s, 9);
@@ -87,8 +91,17 @@ void ldm(long long int d, long long int s) {
 }
 
 void sto(int a, long long int v) {
-	if ((a >= DATAORIG) && (a <= DATAOFF))
-		mem[a] = (ind[pc] == 1) ? mem[v] : v;
+	if ((a >= DATAORIG) && (a <= DATAOFF)) {
+		long long int a1 = 0;
+
+		a1 = a;
+		a1 += (indexes[pc] > 0) ? mem[indexes[pc]] : 0;
+		mem[a1] = (ind[pc] == 1) ?
+			((indexes[pc] > 0) ?
+				mem[v] + mem[indexes[pc]]
+				: mem[v])
+			: v;
+	}
 	else
 		mem[D(a)] = v;
 }
@@ -231,6 +244,8 @@ void loadp() {
 	char* tok = NULL;
 	char* ltok = NULL;
 	char* labline = malloc(20);
+	char* varline = malloc(20);
+	char* idx = malloc(10);
 	char* instr = malloc(20);
 	char* ipos = NULL;
 	char* m = malloc(80);
@@ -239,6 +254,8 @@ void loadp() {
 	long long int v1 = 0;
 	char* md = malloc(80);
 	int loc = 0;
+	int idx1 = 0;
+
 
 	printf("\nReading program\n");
 	e = fopen_s(&f,"test.asm", "r");
@@ -251,33 +268,72 @@ void loadp() {
 		tok = strtok(l , "|");
 		strcpy(instr, tok);
 
+		/* process label */
 		if ((ipos=strstr(instr, ":")) != NULL) {
 			strcpy(labline, instr);
 			char* res = strchr(labline, ':');
 			strcpy(instr,res);
-			labline[(res - labline)]='\0';
-			memmove(instr, instr + 1, strlen(instr));
+			labline[(res - labline)]='\0'; /* extract label name */
+			DH(instr);
 			lab(labline, loc);
 		}
 
-		if (strcmp(instr, "END") == 0) 
+		if (strcmp(instr, "END") == 0) {
 			break;
+		}
 		else if (strcmp(instr, "STO") == 0) {
 			/* walk through other tokens */
 			tok = strtok(NULL, "|");
 			strcpy(m, tok);
 			if (isalpha(m[0])) {
-				m1 = get_var(m);
+				if ((ipos = strstr(m, "#")) != NULL) {
+					/* variable indexing */
+					strcpy(varline, m);
+					char* res = strchr(varline, '#');
+					strcpy(idx, res);
+					DH(idx);
+					if (isalpha(idx[0])) {
+						idx1 = get_var(idx);
+						indexes[loc] = idx1;
+					}
+					else
+						idx1 = atoi(idx);
+					varline[(res - varline)] = '\0';
+					strcpy(m, varline);
+					m1 = get_var(m);
+				}
+				else {
+					m1 = get_var(m);
+				}
 			}
 			else 
 				m1 = atoi(m);
+
 			tok = strtok(NULL, "|");
 			strcpy(v, tok);
 			if (ispunct(v[0])) {
-				memmove(v, v + 1, strlen(v));
-				v[strlen(v) - 1] = '\0';
-				v1 = get_var(v);
-				ind[loc] = 1;
+				if ((ipos = strstr(v, "#")) != NULL) {
+                    /* variable indexing */
+					strcpy(varline, v);
+					char* res = strchr(varline, '#');
+					strcpy(idx, res);
+					DH(idx);
+					if (isalpha(idx[0]))
+						idx1 = get_var(idx);
+					else
+						idx1 = atoi(idx);
+					varline[(res - varline)] = '\0';
+					strcpy(v, varline);
+					v1 = get_var(v) + mem[idx1];
+					ind[loc] = 1;
+				}
+				else {
+					//memmove(v, v + 1, strlen(v));
+					DH(v); DT(v);
+					//v[strlen(v) - 1] = '\0';
+					v1 = get_var(v);
+					ind[loc] = 1;
+				}
 			}
 			else
 				v1 = atoi(v);
@@ -286,7 +342,7 @@ void loadp() {
 		}
 		else if (strcmp(instr, "LDM") == 0) {
 			/* walk through other tokens */
-			/* LDM dest,src (dest can be memory loc or var) */
+			/* LDM dest,src (can be memory loc or var) */
 			tok = strtok(NULL, "|");
 			strcpy(m, tok);
 			if (isalpha(m[0]))
@@ -296,8 +352,9 @@ void loadp() {
 			tok = strtok(NULL, "|");
 			strcpy(v, tok);
 			if (isalpha(v[0])) {
-				memmove(v, v + 1, strlen(v));
-				v[strlen(v) - 1] = '\0';
+				//memmove(v, v + 1, strlen(v));
+				DH(v); DT(v);
+				//v[strlen(v) - 1] = '\0';
 				v1 = get_var(v);
 				ind[loc] = 1;
 			}
@@ -317,8 +374,9 @@ void loadp() {
 			tok = strtok(NULL, "|");
 			strcpy(v, tok);
 			if (ispunct(v[0])) {
-				memmove(v, v + 1, strlen(v));
-				v[strlen(v) - 1] = '\0';
+				//memmove(v, v + 1, strlen(v));
+				DH(v); DT(v);
+				//v[strlen(v) - 1] = '\0';
 				v1 = get_var(v);
 				ind[loc] = 1;
 			}
@@ -338,8 +396,9 @@ void loadp() {
 			tok = strtok(NULL, "|");
 			strcpy(v, tok);
 			if (ispunct(v[0])) {
-				memmove(v, v + 1, strlen(v));
-				v[strlen(v) - 1] = '\0';
+				//memmove(v, v + 1, strlen(v));
+				DH(v); DT(v);
+				//v[strlen(v) - 1] = '\0';
 				v1 = get_var(v);
 				ind[loc] = 1;
 			}
@@ -352,7 +411,8 @@ void loadp() {
 			tok = strtok(NULL, "|");
 			strcpy(m, tok);
 			if (isalpha(m[0])) {
-				m[strlen(m) - 1] = '\0';
+				//m[strlen(m) - 1] = '\0';
+				DT(m);
 				if (get_lab(m) < 0) {
 					m1 = lab(m, -1); /* create a place holder */
 					                 /* m1 is the location in array */
@@ -372,7 +432,8 @@ void loadp() {
 			tok = strtok(NULL, "|");
 			strcpy(m, tok);
 			if (isalpha(m[0])) {
-				m[strlen(m) - 1] = '\0';
+				//m[strlen(m) - 1] = '\0';
+				DT(m);
 				if (get_lab(m) < 0) {
 					m1 = lab(m, -1); /* create a place holder */
 									 /* m1 is the location in array */
@@ -406,8 +467,9 @@ void loadp() {
 				v1 = atoi(v);
 			tok = strtok(NULL, "|");
 			strcpy(md, tok);
-			md[strlen(md) - 1] = '\0';
-			 
+			//md[strlen(md) - 1] = '\0';
+			DT(md);
+
 			mem[loc] = enc(CMP, m1, v1);
 
 			if (strcmp(md, STRFY(LSS)) == 0)

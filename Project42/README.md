@@ -125,10 +125,12 @@ Must be at the beginning of the program.
 The format is
 
 ```
-[<L>:]STO|<M> or <V>|<N> or [@]<V>
+[<L>:]STO|<M> or <V>[#<N> or <V>]|<N> or [@]<V>[#<N> or <V>]
 ```
 
 It stores a value or a content of a variable in a memory location pointed by a integer number or a variable name.
+
+The operator `#` represents an index in the memory area pointed by V.
 
 ### Instruction : LDM
 
@@ -214,6 +216,8 @@ Ending a program with this instruction is totally optional, but it can be useful
 
 ## Example code
 
+### Fibonacci number
+
 Below you can find a program that can evaluate the N-th fibonacci number
 
 ```
@@ -223,8 +227,8 @@ VAR|T|1
 VAR|C|1
 VAR|MAXITER|1
 STO|MAXITER|35
-STO|C|1
-STO|A|1
+STO|C|2
+STO|A|0
 STO|B|1
 L1:CMP|C|MAXITER|GTE
 JNZ|L2
@@ -241,4 +245,22 @@ L2:END
 Of course there are no `bigInteger` here, so the limit is the `long long int` range.
 
 The same program is stored in the `test.asm` file.
+
+### Variable indexing
+
+```
+VAR|AB|5
+VAR|C|1
+VAR|M|1
+STO|M|5
+STO|C|0
+L1:STO|AB#C|10
+INC|C|1
+CMP|C|M|GTE
+JNZ|L2
+JMP|L1
+L2:END
+```
+
+In this code, the `#` operator is used alongside a variable. This loop fills the first 5 memory location pointed by `AB`, with value 10.
 
