@@ -224,3 +224,5 @@ END
 
 Of course there are no biginteger here, so the limit is the `long long int` range.
 
+The same program is stored in the `test.asm` file.
+
