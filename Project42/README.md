@@ -9,19 +9,19 @@ It has a lot of limitations, but at the moment I quite happy with it.
 
 At the moment the VM uses 32KB of memory, and the first 2KB are reserved for the program. The remaining part is the DATA memory. At the beginning of the DATA memory, there's the static part for the allocation of the variables/arrays. Soon after that the program begins.
 
-####### 0
-|     |
-  ...   *Program area*
-|     |
-|-----| 2048
-|     |
-  ...   *Variables / Constants / Arrays area*
-|     |
-|-----| 2048 + X
-|     |
-  ...   *Program memory area*
-|     |
-####### 32767
+####### 0  
+|     |  
+  ...   *Program area*  
+|     |  
+|-----| 2048  
+|     |  
+  ...   *Variables / Constants / Arrays area*  
+|     |  
+|-----| 2048 + X   
+|     |  
+  ...   *Program memory area*  
+|     |  
+####### 32767  
 
 Each instruction is encoded in a long long int (aka 64bit integer), with this format:
 
