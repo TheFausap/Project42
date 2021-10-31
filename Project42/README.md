@@ -137,7 +137,7 @@ The format is
 [<L>:]INC|<M> or <V>|<N> or [@]<V>
 ```
 
-It adds or subtract the value specified by an integer number or the contect of the variable, to the value store at memory location (direct address) or variable.
+It adds or subtract the value specified by an integer number or the contect of the variable, to the value stored at memory location (direct address) or variable.
 
 ### Instruction : CMP
 
@@ -157,7 +157,7 @@ The criteria `<MD>` is one of the following mnemonics:
 - GTE
 - EQL
 
-It uses 8-bit lower portion of the R15 registry (at the moment the registry itself is not addressable directly by any instructions, but in the future this may changes, so this is a word of advice). The content of R15 is zero each time a CMP instruction is called.
+It uses 8-bit lower portion of the R15 registry (at the moment the registry itself is not addressable directly by any instructions, but in the future this may changes, so this is a word of advice). The content of R15 is zeroed each time a CMP instruction is called.
 
 The result change the flags registry. Only 1-bit (0 or 1) is stored, and used in the flags registry, as result of a boolean operation (false/true).
 
@@ -193,4 +193,34 @@ The format is:
 
 It ends the program. It accepts also a label. Basically the instruction is like a NOP.
 Because the memory is zeroed, any jump to any very high unused memory address will end the program without error.
+
+Ending a program with this instruction is totally optional, but it can be useful if used with a label.
+
+## Example code
+
+Below you can find a program that can evaluate the N-th fibonacci number
+
+```
+VAR|A|1
+VAR|B|1
+VAR|T|1
+VAR|C|1
+VAR|MAXITER|1
+STO|MAXITER|40
+STO|C|1
+STO|A|1
+STO|B|1
+CMP|C|MAXITER|GTE
+JNZ|11
+STO|T|@B
+INC|B|@A
+STO|A|@T
+INC|C|1
+JMP|4
+END
+```
+
+`MAXITER` is the n-th fibonacci number we want to evaluate. The final result will be stored in the `B` variable.
+
+Of course there are no biginteger here, so the limit is the `long long int` range.
 
