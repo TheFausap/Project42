@@ -36,6 +36,7 @@ enum {END=0,STO,LDM,JMP,DEC,INC,JNZ,CMP};
 #define GTT 1
 #define LSE 2
 #define GTE 3
+#define EQL 4
 #define STRFY(x) #x
 
 #define D(x) DATAOFF+(x)
@@ -136,6 +137,9 @@ void cmp(long long int l1, long long int l2, int m) {
 		break;
 	case GTE:
 		flags = mem[l11] >= mem[l22];
+		break;
+	case EQL:
+		flags = mem[l11] == mem[l22];
 		break;
 	}
 	flags = flags << 2;
@@ -414,6 +418,8 @@ void loadp() {
 				r15 = (char)LSE;
 			else if (strcmp(md, STRFY(GTE)) == 0)
 				r15 = (char)GTE;
+			else if (strcmp(md, STRFY(EQL)) == 0)
+				r15 = (char)EQL;
 			else {
 				printf("Syntax Error in CMP\n"); exit(-12);
 			}
