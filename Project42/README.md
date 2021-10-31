@@ -95,3 +95,18 @@ Some rules:
 6) No arithmetic in the assignment operation
 
 As you can see INC/DEC are basically ADD/SUB operations.
+
+Below the symbols mean:
+
+- <N> any number
+- <M> memory location ... any, fun stuff may happens :)
+- <V> variable name
+- <L> label
+
+### Instruction : STO
+
+The format is
+
+```
+[<L>:]STO|<M> or <V>|<N> or [@]<V>
+```
