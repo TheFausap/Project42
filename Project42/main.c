@@ -87,7 +87,10 @@ int lab(char* s, int loc) {
 }
 
 void ldm(long long int d, long long int s) {
-	mem[D(d)]=mem[D(s)];
+	if ((d >= DATAORIG) && (d <= DATAOFF)) 
+		mem[d] = (d >= DATAORIG) && (d <= DATAOFF) ? mem[s] : mem[D(s)];
+	else
+		mem[D(d)] = mem[D(s)];
 }
 
 void sto(int a, long long int v) {
@@ -116,15 +119,25 @@ void jmp(int ad) {
 }
 
 void dec(int a, long long int v) {
-	if ((a >= DATAORIG) && (a <= DATAOFF))
-		mem[a] -= (ind[pc] == 1) ? mem[v] : v;
+	if ((a >= DATAORIG) && (a <= DATAOFF)) {
+		long long int a1 = 0;
+
+		a1 = a;
+		a1 += (indexes[pc] > 0) ? mem[indexes[pc]] : 0;
+		mem[a1] -= (ind[pc] == 1) ? mem[v] : v;
+	}
 	else
 		mem[D(a)] -= v;
 }
 
 void inc(int a, long long int v) {
-	if ((a >= DATAORIG) && (a <= DATAOFF))
-		mem[a] += (ind[pc] == 1) ? mem[v] : v;
+	if ((a >= DATAORIG) && (a <= DATAOFF)) {
+		long long int a1 = 0;
+
+		a1 = a;
+		a1 += (indexes[pc] > 0) ? mem[indexes[pc]] : 0;
+		mem[a1] += (ind[pc] == 1) ? mem[v] : v;
+	}
 	else
 		mem[D(a)] += v;
 }
@@ -295,12 +308,16 @@ void loadp() {
 					if (isalpha(idx[0])) {
 						idx1 = get_var(idx);
 						indexes[loc] = idx1;
+						varline[(res - varline)] = '\0';
+						strcpy(m, varline);
+						m1 = get_var(m);
 					}
-					else
+					else {
 						idx1 = atoi(idx);
-					varline[(res - varline)] = '\0';
-					strcpy(m, varline);
-					m1 = get_var(m);
+						varline[(res - varline)] = '\0';
+						strcpy(m, varline);
+						m1 = get_var(m) + idx1;
+					}
 				}
 				else {
 					m1 = get_var(m);
@@ -311,6 +328,7 @@ void loadp() {
 
 			tok = strtok(NULL, "|");
 			strcpy(v, tok);
+			idx1 = 0;
 			if (ispunct(v[0])) {
 				if ((ipos = strstr(v, "#")) != NULL) {
                     /* variable indexing */
@@ -318,13 +336,15 @@ void loadp() {
 					char* res = strchr(varline, '#');
 					strcpy(idx, res);
 					DH(idx);
-					if (isalpha(idx[0]))
+					if (isalpha(idx[0])) {
 						idx1 = get_var(idx);
+						indexes[loc] = idx1;
+					}
 					else
 						idx1 = atoi(idx);
 					varline[(res - varline)] = '\0';
 					strcpy(v, varline);
-					v1 = get_var(v) + mem[idx1];
+					v1 = get_var(v) + idx1;
 					ind[loc] = 1;
 				}
 				else {
@@ -367,7 +387,29 @@ void loadp() {
 			tok = strtok(NULL, "|");
 			strcpy(m, tok);
 			if (isalpha(m[0])) {
-				m1 = get_var(m);
+				if ((ipos = strstr(m, "#")) != NULL) {
+					/* variable indexing */
+					strcpy(varline, m);
+					char* res = strchr(varline, '#');
+					strcpy(idx, res);
+					DH(idx);
+					if (isalpha(idx[0])) {
+						idx1 = get_var(idx);
+						indexes[loc] = idx1;
+						varline[(res - varline)] = '\0';
+						strcpy(m, varline);
+						m1 = get_var(m);
+					}
+					else {
+						idx1 = atoi(idx);
+						varline[(res - varline)] = '\0';
+						strcpy(m, varline);
+						m1 = get_var(m) + idx1;
+					}
+				}
+				else {
+					m1 = get_var(m);
+				}
 			}
 			else
 				m1 = atoi(m);
@@ -375,8 +417,9 @@ void loadp() {
 			strcpy(v, tok);
 			if (ispunct(v[0])) {
 				//memmove(v, v + 1, strlen(v));
-				DH(v); DT(v);
 				//v[strlen(v) - 1] = '\0';
+				DH(v); DT(v);
+				
 				v1 = get_var(v);
 				ind[loc] = 1;
 			}
@@ -389,7 +432,29 @@ void loadp() {
 			tok = strtok(NULL, "|");
 			strcpy(m, tok);
 			if (isalpha(m[0])) {
-				m1 = get_var(m);
+				if ((ipos = strstr(m, "#")) != NULL) {
+					/* variable indexing */
+					strcpy(varline, m);
+					char* res = strchr(varline, '#');
+					strcpy(idx, res);
+					DH(idx);
+					if (isalpha(idx[0])) {
+						idx1 = get_var(idx);
+						indexes[loc] = idx1;
+						varline[(res - varline)] = '\0';
+						strcpy(m, varline);
+						m1 = get_var(m);
+					}
+					else {
+						idx1 = atoi(idx);
+						varline[(res - varline)] = '\0';
+						strcpy(m, varline);
+						m1 = get_var(m) + idx1;
+					}
+				}
+				else {
+					m1 = get_var(m);
+				}
 			}
 			else
 				m1 = atoi(m);

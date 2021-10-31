@@ -147,12 +147,12 @@ Copy memory locations (like memcpy in C), but it can also use variables. It's mo
 The format is
 
 ```
-[<L>:]DEC|<M> or <V>|<N> or [@]<V>
+[<L>:]DEC|<M> or <V>[#<N> or <V>]|<N> or [@]<V>
 ```
 
 
 ```
-[<L>:]INC|<M> or <V>|<N> or [@]<V>
+[<L>:]INC|<M> or <V>[#<N> or <V>]|<N> or [@]<V>
 ```
 
 It adds or subtract the value specified by an integer number or the contect of the variable, to the value stored at memory location (direct address) or variable.
