@@ -249,7 +249,7 @@ long long int enc1(int i, int m) {
 }
 
 /* rudimental assembler */
-void loadp() {
+void loadp(char* fn) {
 	FILE* f;
 	int e;
 	int len = 80;
@@ -271,7 +271,7 @@ void loadp() {
 
 
 	printf("\nReading program\n");
-	e = fopen_s(&f,"test.asm", "r");
+	e = fopen_s(&f,fn, "r");
 	if (e != 0) exit(-10);
 	while (fgets(l, len, f) != NULL) {
 		printf("LINE\t(%d):\t%s", loc, l);
@@ -569,8 +569,8 @@ void loadp() {
 	fclose(f);
 }
 
-int main() {
-	loadp();
+int main(int argc, char **argv) {
+	loadp(argv[0]);
 	while (pc >= 0) {
 		readp(pc);
 		pc++;
