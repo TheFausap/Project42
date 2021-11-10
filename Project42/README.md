@@ -125,10 +125,11 @@ Must be at the beginning of the program.
 The format is
 
 ```
-[<L>:]STO|<M> or <V>[#<N> or <V>]|<N> or [@]<V>[#<N> or <V>]
+[<L>:]STO|<M> or <V>[#<N> or <V>] or R0|1|<N> or [@]<V>[#<N> or <V>]
 ```
 
 It stores a value or a content of a variable in a memory location pointed by a integer number or a variable name.
+It accepts also registries R0 or R1
 
 The operator `#` represents an index in the memory area pointed by V.
 
@@ -147,15 +148,16 @@ Copy memory locations (like memcpy in C), but it can also use variables. It's mo
 The format is
 
 ```
-[<L>:]DEC|<M> or <V>[#<N> or <V>]|<N> or [@]<V>
+[<L>:]DEC|<M> or <V>[#<N> or <V>] or R0|1 |<N> or [@]<V>
 ```
 
 
 ```
-[<L>:]INC|<M> or <V>[#<N> or <V>]|<N> or [@]<V>
+[<L>:]INC|<M> or <V>[#<N> or <V>] or R0|1 |<N> or [@]<V>
 ```
 
 It adds or subtract the value specified by an integer number or the contect of the variable, to the value stored at memory location (direct address) or variable.
+It accepts also registry R0 or R1
 
 ### Instruction : CMP
 
@@ -174,12 +176,16 @@ The criteria `<MD>` is one of the following mnemonics:
 - LSE
 - GTE
 - EQL
+- DBL
 
 It uses 8-bit lower portion of the R15 registry (at the moment the registry itself is not addressable directly by any instructions, but in the future this may changes, so this is a word of advice). The content of R15 is zeroed each time a CMP instruction is called.
 
 The result change the flags registry. Only 1-bit (0 or 1) is stored, and used in the flags registry, as result of a boolean operation (false/true).
 
-The fact that CMP uses a registry can be lead to further expansions and more complex operations, also not directly related to the comparison (and this will requires a name change, possibly).
+The fact that CMP uses a registry can be lead to further expansions and more complex operations, also not directly related to the comparison 
+(and this will requires a name change, possibly).
+
+Using DBL, it will access all the double arithmetic operation and another segment of memory (64KB) used to store double values.
 
 ### Instructions : JMP / JNZ
 
