@@ -11,6 +11,10 @@
 long long int mem[MEMSIZE] = { 0 };
 int DATAOFF = DATAORIG;       /* max prog size in byte */
 int pc = 0;
+
+int r0 = 0;
+int r1 = 0;
+
 int r15 = 0;
 char flags = 0;
 char ind[DATAORIG] = { 0 };
@@ -93,7 +97,7 @@ void ldm(long long int d, long long int s) {
 		mem[D(d)] = mem[D(s)];
 }
 
-void sto(int a, long long int v) {
+void sto(short a, long long int v) {
 	if ((a >= DATAORIG) && (a <= DATAOFF)) {
 		long long int a1 = 0;
 
@@ -104,6 +108,24 @@ void sto(int a, long long int v) {
 				mem[v] + mem[indexes[pc]]
 				: mem[v])
 			: v;
+	}
+	else if (a < 0) {
+		switch (a) {
+			case -1: 
+				r0 = (ind[pc] == 1) ? 
+					((indexes[pc] > 0) ? 
+					 mem[v] + mem[indexes[pc]] 
+					 : mem[v]) 
+					:v;
+				break;
+			case -2:
+				r1 = (ind[pc] == 1) ?
+                                        ((indexes[pc] > 0) ?
+                                         mem[v] + mem[indexes[pc]]
+                                         : mem[v])
+                                        :v;
+                                break;
+		}
 	}
 	else
 		mem[D(a)] = v;
@@ -118,7 +140,7 @@ void jmp(int ad) {
 	}
 }
 
-void dec(int a, long long int v) {
+void dec(short a, long long int v) {
 	if ((a >= DATAORIG) && (a <= DATAOFF)) {
 		long long int a1 = 0;
 
@@ -126,11 +148,20 @@ void dec(int a, long long int v) {
 		a1 += (indexes[pc] > 0) ? mem[indexes[pc]] : 0;
 		mem[a1] -= (ind[pc] == 1) ? mem[v] : v;
 	}
+	else if (a < 0) {
+		switch (a) {
+			case -1:
+				r0 -= (ind[pc] == 1) ? mem[v] : v;
+				break;
+			case -2:
+				r1 -= (ind[pc] == 1) ? mem[v] : v;
+		}
+	}
 	else
 		mem[D(a)] -= v;
 }
 
-void inc(int a, long long int v) {
+void inc(short a, long long int v) {
 	if ((a >= DATAORIG) && (a <= DATAOFF)) {
 		long long int a1 = 0;
 
@@ -138,6 +169,15 @@ void inc(int a, long long int v) {
 		a1 += (indexes[pc] > 0) ? mem[indexes[pc]] : 0;
 		mem[a1] += (ind[pc] == 1) ? mem[v] : v;
 	}
+	else if (a < 0) {
+                switch (a) {
+                        case -1:
+                                r0 += (ind[pc] == 1) ? mem[v] : v;
+                                break;
+                        case -2:
+                                r1 += (ind[pc] == 1) ? mem[v] : v;
+                }
+        }
 	else
 		mem[D(a)] += v;
 }
@@ -187,6 +227,10 @@ void pmem(int sz) {
 	for (int i = 0; i < sz; i++) {
 		printf("MEM\t[%d]:\t%lld\n", i, mem[i]);
 	}
+
+	printf("R0: %d\n", r0);
+	printf("R1: %d\n", r1);
+
 	for (int i = 0; i < sz; i++) {
 		printf("DATA\t[%d]:\t%lld\n", i, mem[DATAORIG+i]);
 	}
@@ -198,7 +242,7 @@ void pmem(int sz) {
 int readp(int a) {
 	int inst = mem[a] & 7;
 	if (!inst) { end(); return 0; }
-	int m = mem[a] >> 3 & 0xffff;
+	short m = mem[a] >> 3 & 0xffff;
 	long long int o = mem[a] >> VSHIFT;
 
 	switch (inst) {
@@ -271,8 +315,13 @@ void loadp(char* fn) {
 
 
 	printf("\nReading program\n");
+#ifdef WIN32
 	e = fopen_s(&f,fn, "r");
 	if (e != 0) exit(-10);
+#else
+	f = fopen(fn,"r");
+	if (f == NULL) exit(-10);
+#endif
 	while (fgets(l, len, f) != NULL) {
 		printf("LINE\t(%d):\t%s", loc, l);
 	
@@ -319,6 +368,16 @@ void loadp(char* fn) {
 						m1 = get_var(m) + idx1;
 					}
 				}
+				/* Can be a registry */
+				else if (m[0] == 'R') {
+					switch(m[1]) {
+						case '0': 
+							m1 = -1;
+							break;
+						case '1':
+							m1 = -2;
+					}
+				}
 				else {
 					m1 = get_var(m);
 				}
@@ -331,7 +390,7 @@ void loadp(char* fn) {
 			idx1 = 0;
 			if (ispunct(v[0])) {
 				if ((ipos = strstr(v, "#")) != NULL) {
-                    /* variable indexing */
+                    			/* variable indexing */
 					strcpy(varline, v);
 					char* res = strchr(varline, '#');
 					strcpy(idx, res);
@@ -348,9 +407,7 @@ void loadp(char* fn) {
 					ind[loc] = 1;
 				}
 				else {
-					//memmove(v, v + 1, strlen(v));
 					DH(v); DT(v);
-					//v[strlen(v) - 1] = '\0';
 					v1 = get_var(v);
 					ind[loc] = 1;
 				}
@@ -358,6 +415,7 @@ void loadp(char* fn) {
 			else
 				v1 = atoi(v);
 
+			if (m1 < 0) v1 += 1;
 			mem[loc] = enc(STO, m1, v1);
 		}
 		else if (strcmp(instr, "LDM") == 0) {
@@ -407,6 +465,16 @@ void loadp(char* fn) {
 						m1 = get_var(m) + idx1;
 					}
 				}
+				/* Can be a registry */
+                                else if (m[0] == 'R') {
+                                        switch(m[1]) {
+                                                case '0':
+                                                        m1 = -1;
+                                                        break;
+                                                case '1':
+                                                        m1 = -2;
+                                        }
+				}
 				else {
 					m1 = get_var(m);
 				}
@@ -416,8 +484,6 @@ void loadp(char* fn) {
 			tok = strtok(NULL, "|");
 			strcpy(v, tok);
 			if (ispunct(v[0])) {
-				//memmove(v, v + 1, strlen(v));
-				//v[strlen(v) - 1] = '\0';
 				DH(v); DT(v);
 				
 				v1 = get_var(v);
@@ -452,6 +518,16 @@ void loadp(char* fn) {
 						m1 = get_var(m) + idx1;
 					}
 				}
+				/* Can be a registry */
+                                else if (m[0] == 'R') {
+                                        switch(m[1]) {
+                                                case '0':
+                                                        m1 = -1;
+                                                        break;
+                                                case '1':
+                                                        m1 = -2;
+                                        }
+                                }
 				else {
 					m1 = get_var(m);
 				}
@@ -570,7 +646,7 @@ void loadp(char* fn) {
 }
 
 int main(int argc, char **argv) {
-	loadp(argv[0]);
+	loadp(argv[1]);
 	while (pc >= 0) {
 		readp(pc);
 		pc++;
