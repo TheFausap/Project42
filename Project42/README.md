@@ -106,6 +106,8 @@ Below the symbols mean:
 - `<M>` memory location (integer 16-bit number) ... any, fun stuff may happens :) i.e. Any instruction is encoded as an integer, so a program could rewrites itself.
 - `<V>` variable name
 - `<L>` label
+- `<D>` floating-point value
+- `<U>` unused value
 - `<MD>` mode of comparison
 
 ### Pseudo-instruction : VAR
@@ -148,12 +150,12 @@ Copy memory locations (like memcpy in C), but it can also use variables. It's mo
 The format is
 
 ```
-[<L>:]DEC|<M> or <V>[#<N> or <V>] or R0|1 |<N> or [@]<V>
+[<L>:]DEC|<M> or <V>[#<N> or <V>] or R0 or R1 |<N> or [@]<V>
 ```
 
 
 ```
-[<L>:]INC|<M> or <V>[#<N> or <V>] or R0|1 |<N> or [@]<V>
+[<L>:]INC|<M> or <V>[#<N> or <V>] or R0 or R1 |<N> or [@]<V>
 ```
 
 It adds or subtract the value specified by an integer number or the contect of the variable, to the value stored at memory location (direct address) or variable.
@@ -219,6 +221,28 @@ It ends the program. It accepts also a label. Basically the instruction is like 
 Because the memory is zeroed, any jump to any very high unused memory address will end the program without error.
 
 Ending a program with this instruction is totally optional, but it can be useful if used with a label.
+
+## Double values handling
+
+The instruction CMP uses an extended syntax to perform arithmetic operation with floating-point numbers.
+It uses two floating-point registries, DR0 and DR1, and define the following operations:
+
+- DADD : CMP|DADD|<U>|DBL
+- DSUB : CMP|DSUB|<U>|DBL
+- DMUL : CMP|DMUL|<U>|DBL
+- DDIV : CMP|DDIV|<U>|DBL
+
+these operations uses the two registries to perform the relative operation, and they store the result in DR0.
+
+About the floating-point data movement, there are two operations:
+
+- DBL  : CMP|0 or 1|<D>|DBL
+	It stores the value <D> into DR0 or DR1
+
+- DMOV : CMP|DMOV|<M> or <V>|DBL
+	It moves the value from DR0 into memory location pointed by <M> or <V>
+
+
 
 ## Example code
 

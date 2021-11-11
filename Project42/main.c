@@ -277,7 +277,7 @@ void cmp(long long int l1, long long int l2, int m) {
 				break;
 			case DMOV:
 				flags = 0;
-				dmem[l22] = (l11 == 0) ? dr0 : dr1;
+				dmem[l2] = dr0;
 				break;
 			}
 		}
