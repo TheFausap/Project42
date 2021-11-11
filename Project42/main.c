@@ -13,6 +13,7 @@ long double dmem[MEMSIZE] = { 0.0 };
 short dmemp = 0;
 
 int DATAOFF = DATAORIG;       /* max prog size in byte */
+int DDATAOFF = 2;             /* floating-point memory */
 int pc = 0;
 
 long long int r0 = 0;
@@ -67,10 +68,19 @@ enum {END=0,STO,LDM,JMP,DEC,INC,JNZ,CMP};
 
 void var(char* s, int sz) {
 	strncpy(var_area[var_count].sym, s, 9);
-	var_area[var_count].a = DATAOFF;
-	var_area[var_count].sz = sz;
-	DATAOFF += sz;
+	if (sz < 0) {
+		/* negative size means floating-point variable */
+		var_area[var_count].a = DDATAOFF;
+		var_area[var_count].sz = sz;
+		DDATAOFF += abs(sz);
+	}
+	else {
+		var_area[var_count].a = DATAOFF;
+		var_area[var_count].sz = sz;
+		DATAOFF += sz;
+	}
 	var_count++;
+	
 }
 
 int get_var(char* s) {
@@ -78,7 +88,7 @@ int get_var(char* s) {
 		if (strcmp(s, var_area[i].sym) == 0) {
 			return var_area[i].a;
 		}
-	printf("Variable not found\n");
+	printf("\nVariable not found\n");
 	exit(-20);
 }
 
@@ -117,7 +127,7 @@ void sto(short a, long long int v) {
 		short a1 = 0;
 
 		a1 = a;
-		a1 += (indexes[pc] > 0) ? mem[indexes[pc]] : 0;
+		a1 += (indexes[pc] > 0) ? (short) mem[indexes[pc]] : 0;
 		mem[a1] = (ind[pc] == 1) ?
 			((indexes[pc] > 0) ?
 				mem[v] + mem[indexes[pc]]
@@ -228,9 +238,9 @@ void end() {
 	pc = -2;
 }
 
-void cmp(long long int l1, long long int l2, int m) {
-	long long int l11 = 0;
-	long long int l22 = 0;
+void cmp(short l1, short l2, short m) {
+	short l11 = 0;
+	short l22 = 0;
 	long double dval = 0;
 	l11 = ((l1 >= DATAORIG) && (l1 <= DATAOFF)) ? l1 : D(l1);
 	l22 = ((l2 >= DATAORIG) && (l2 <= DATAOFF)) ? l2 : D(l2);
@@ -277,6 +287,7 @@ void cmp(long long int l1, long long int l2, int m) {
 				break;
 			case DMOV:
 				flags = 0;
+				/* no address conversion needed */
 				dmem[l2] = dr0;
 				break;
 			}
@@ -313,6 +324,9 @@ void pmem(int sz) {
 		printf("DATA\t[%d]:\t%lld\n", i, mem[DATAORIG+i]);
 	}
 	for (int i = 0; i < sz; i++) {
+		printf("FDATA\t[%d]:\t%lf\n", i, dmem[i]);
+	}
+	for (int i = 0; i < sz; i++) {
 		printf("VAR\t[%d]:\t%s\tMEM[%d]\t%d\n", i, var_area[i].sym, var_area[i].a, var_area[i].sz);
 	}
 }
@@ -343,7 +357,7 @@ int readp(int a) {
 		inc(m, o);
 		break;
 	case CMP:
-		cmp(m, o, r15);
+		cmp(m, (short) o, r15);
 		break;
 	default:
 		return -1;
@@ -617,9 +631,7 @@ void loadp(char* fn) {
 			tok = strtok(NULL, "|");
 			strcpy(v, tok);
 			if (ispunct(v[0])) {
-				//memmove(v, v + 1, strlen(v));
 				DH(v); DT(v);
-				//v[strlen(v) - 1] = '\0';
 				v1 = get_var(v);
 				ind[loc] = 1;
 			}
