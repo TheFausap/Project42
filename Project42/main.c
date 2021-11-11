@@ -6,14 +6,14 @@
 #define MEMSIZE 32767
 #define DATAORIG 2048
 
-#define VSHIFT 20
+#define VSHIFT 21
 
 long long int mem[MEMSIZE] = { 0 };
 long double dmem[MEMSIZE] = { 0.0 };
 short dmemp = 0;
 
 int DATAOFF = DATAORIG;       /* max prog size in byte */
-int DDATAOFF = 2;             /* floating-point memory */
+int DDATAOFF = 1024;          /* 1KB reserved */
 int pc = 0;
 
 long long int r0 = 0;
@@ -22,7 +22,8 @@ long long int r1 = 0;
 long double dr0 = 0.0;
 long double dr1 = 0.0;
 
-int r15 = 0;
+short r15 = 0;
+short er15 = 0;
 char flags = 0;
 char ind[DATAORIG] = { 0 };
 short indexes[DATAORIG] = { 0 };
@@ -57,6 +58,9 @@ enum {END=0,STO,LDM,JMP,DEC,INC,JNZ,CMP};
 #define DMUL 53 /* perform the related arith operation */
 #define DDIV 54 /* perform the related arith operation */
 #define DMOV 55 /* move double data from reg R0 or R1 into DMEM */
+
+#define DR0  56
+#define DR1  57
 
 #define STRFY(x) #x
 
@@ -157,11 +161,11 @@ void sto(short a, long long int v) {
 }
 
 void dsto(short a, long double v) {
-	switch (a) {
-	case 0:
+	switch (a-DATAORIG) {
+	case DR0:
 		dr0 = v;
 		break;
-	case 1:
+	case DR1:
 		dr1 = v;
 		break;
 	}
@@ -238,62 +242,58 @@ void end() {
 	pc = -2;
 }
 
-void cmp(short l1, short l2, short m) {
+void cmp(short l1, short l2, short m, short em) {
 	short l11 = 0;
 	short l22 = 0;
 	long double dval = 0;
 	l11 = ((l1 >= DATAORIG) && (l1 <= DATAOFF)) ? l1 : D(l1);
 	l22 = ((l2 >= DATAORIG) && (l2 <= DATAOFF)) ? l2 : D(l2);
-	switch (m) {
-	case LSS:
-		flags = mem[l11] < mem[l22];
-		break;
-	case GTT:
-		flags = mem[l11] > mem[l22];
-		break;
-	case LSE:
-		flags = mem[l11] <= mem[l22];
-		break;
-	case GTE:
-		flags = mem[l11] >= mem[l22];
-		break;
-	case EQL:
-		flags = mem[l11] == mem[l22];
-		break;
-	case DBL:
-		flags = 0;
-		if ((l1 == 0) || (l1 == 1)) {
+	if (!em) {
+		switch (m) {
+		case LSS:
+			flags = mem[l11] < mem[l22];
+			break;
+		case GTT:
+			flags = mem[l11] > mem[l22];
+			break;
+		case LSE:
+			flags = mem[l11] <= mem[l22];
+			break;
+		case GTE:
+			flags = mem[l11] >= mem[l22];
+			break;
+		case EQL:
+			flags = mem[l11] == mem[l22];
+			break;
+		}
+	}
+	else {
+		if ((l1 == DR0 + DATAORIG) || (l1 == DR1 + DATAORIG)) {
 			dval = dmem[l2];
 			dsto(l1, dval);
-			break;
 		}
 		else {
 			switch (l1 - DATAORIG) {
 			case DADD:
-				flags = 0;
 				dadd();
 				break;
 			case DSUB:
-				flags = 0;
 				dsub();
 				break;
 			case DMUL:
-				flags = 0;
 				dmul();
 				break;
 			case DDIV:
-				flags = 0;
 				ddiv();
 				break;
 			case DMOV:
-				flags = 0;
 				/* no address conversion needed */
 				dmem[l2] = dr0;
 				break;
 			}
 		}
-		break;
 	}
+	em = 0;
 	flags = flags << 2;
 }
 
@@ -336,6 +336,7 @@ int readp(int a) {
 	if (!inst) { end(); return 0; }
 	short m = mem[a] >> 3 & 0xffff;
 	long long int o = mem[a] >> VSHIFT;
+	short ex = mem[a] >> 19 & 0x1;
 
 	switch (inst) {
 	case STO: 
@@ -357,7 +358,7 @@ int readp(int a) {
 		inc(m, o);
 		break;
 	case CMP:
-		cmp(m, (short) o, r15);
+		cmp(m, (short) o, r15, ex);	
 		break;
 	default:
 		return -1;
@@ -370,6 +371,17 @@ long long int enc(int i, int m, long long int v) {
 	long long int r = 0;
 	r += (long long int)v << VSHIFT;
 	r += (short) (m << 3);
+	r += i;
+	ad[0] = r;
+	return *ad;
+}
+
+long long int enc4(int i, int m, long long int v, char ex) {
+	long long int* ad = malloc(sizeof(long long int));
+	long long int r = 0;
+	r += (long long int)v << VSHIFT;
+	r += ex << 19;
+	r += (short)(m << 3);
 	r += i;
 	ad[0] = r;
 	return *ad;
@@ -687,6 +699,7 @@ void loadp(char* fn) {
 			/* uses r15 registry. destroyed each time CMP is called */
 			/* walk through other tokens */
 			r15 = 0;
+			er15 = 0;
 			tok = strtok(NULL, "|");
 			strcpy(m, tok);
 			if (isalpha(m[0])) {
@@ -701,6 +714,10 @@ void loadp(char* fn) {
 					m1 = DDIV + DATAORIG;
 				else if (strcmp(m, "DMOV") == 0)
 					m1 = DMOV + DATAORIG;
+				else if (strcmp(m, "DR0") == 0)
+					m1 = DR0 + DATAORIG;
+				else if (strcmp(m, "DR1") == 0)
+					m1 = DR1 + DATAORIG;
 				else
 					m1 = get_var(m);
 			}
@@ -713,9 +730,15 @@ void loadp(char* fn) {
 			if (isalpha(v[0]))
 				v1 = get_var(v);
 			else if (strchr(v, '.') != NULL) {
-				dmem[dmemp] = strtold(v, NULL);
-				v1 = dmemp;
-				dmemp++;
+				if (((m1 - DATAORIG) == DR0) || ((m1 - DATAORIG) == DR1)) {
+					dmem[dmemp] = strtold(v, NULL);
+					v1 = dmemp;
+					dmemp++;
+				}
+				else {
+					dmem[get_var(m)] = strtold(v, NULL);
+					v1 = get_var(m);
+				}
 			}
 			else
 				v1 = atoi(v);
@@ -736,12 +759,12 @@ void loadp(char* fn) {
 			else if (strcmp(md, STRFY(EQL)) == 0)
 				r15 = (char)EQL;
 			else if (strcmp(md, STRFY(DBL)) == 0)
-				r15 = (char)DBL;
+				er15 = 1;
 			else {
 				printf("\nSyntax Error in CMP\n"); exit(-12);
 			}
 
-			mem[loc] = enc(CMP, m1, v1);
+			mem[loc] = enc4(CMP, m1, v1, er15);
 		}
 		else if (strcmp(instr, "VAR") == 0) {
 			/* pseudo instruction */

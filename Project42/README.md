@@ -33,7 +33,7 @@ Each instruction is encoded in a long long int (aka 64bit integer), with this fo
  6                                                              
  3                                                              0 
 ##################################################################
-|VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVMMMMMMMMMMMMMMMMIII|
+|VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVEMMMMMMMMMMMMMMMMIII|
 ##################################################################
 ```
 
@@ -42,6 +42,7 @@ where:
 - I = instruction opcode 
 - M = memory location where to find data / variable location
 - V = values to store (for the "immediate" mode) or variable location
+- E = flag for extended operations (i.e. CMP -> DBL)
 
 It uses also one 32 bit registry, but at the moment only internally.
 
