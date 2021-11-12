@@ -6,7 +6,7 @@
 #define MEMSIZE 32767
 #define DATAORIG 2048
 
-#define VSHIFT 21
+#define VSHIFT 22
 
 long long int mem[MEMSIZE] = { 0 };
 long double dmem[MEMSIZE] = { 0.0 };
@@ -22,8 +22,8 @@ long long int r1 = 0;
 long double dr0 = 0.0;
 long double dr1 = 0.0;
 
-short r15 = 0;
-short er15 = 0;
+//short r15 = 0;
+//short er15 = 0;
 char flags = 0;
 char ind[DATAORIG] = { 0 };
 short indexes[DATAORIG] = { 0 };
@@ -51,16 +51,16 @@ enum {END=0,STO,LDM,JMP,DEC,INC,JNZ,CMP};
 #define LSE 2
 #define GTE 3
 #define EQL 4
+#define DBL 5  /* used to store a double val in dr0 or dr1 */
 
-#define DBL  50 /* used to store a double val in dr0 or dr1 */
-#define DADD 51 /* perform the related arith operation */
-#define DSUB 52 /* perform the related arith operation */
-#define DMUL 53 /* perform the related arith operation */
-#define DDIV 54 /* perform the related arith operation */
-#define DMOV 55 /* move double data from reg R0 or R1 into DMEM */
+#define DADD 50 /* perform the related arith operation */
+#define DSUB 51 /* perform the related arith operation */
+#define DMUL 52 /* perform the related arith operation */
+#define DDIV 53 /* perform the related arith operation */
+#define DMOV 54 /* move double data from reg R0 or R1 into DMEM */
 
-#define DR0  56
-#define DR1  57
+#define DR0  55
+#define DR1  56
 
 #define STRFY(x) #x
 
@@ -242,32 +242,30 @@ void end() {
 	pc = -2;
 }
 
-void cmp(short l1, short l2, short m, short em) {
+void cmp(short l1, short l2, char em) {
 	short l11 = 0;
 	short l22 = 0;
 	long double dval = 0;
 	l11 = ((l1 >= DATAORIG) && (l1 <= DATAOFF)) ? l1 : D(l1);
 	l22 = ((l2 >= DATAORIG) && (l2 <= DATAOFF)) ? l2 : D(l2);
-	if (!em) {
-		switch (m) {
-		case LSS:
-			flags = mem[l11] < mem[l22];
-			break;
-		case GTT:
-			flags = mem[l11] > mem[l22];
-			break;
-		case LSE:
-			flags = mem[l11] <= mem[l22];
-			break;
-		case GTE:
-			flags = mem[l11] >= mem[l22];
-			break;
-		case EQL:
-			flags = mem[l11] == mem[l22];
-			break;
-		}
-	}
-	else {
+	
+	switch (em) {
+	case LSS:
+		flags = mem[l11] < mem[l22];
+		break;
+	case GTT:
+		flags = mem[l11] > mem[l22];
+		break;
+	case LSE:
+		flags = mem[l11] <= mem[l22];
+		break;
+	case GTE:
+		flags = mem[l11] >= mem[l22];
+		break;
+	case EQL:
+		flags = mem[l11] == mem[l22];
+		break;
+	case DBL:
 		if ((l1 == DR0 + DATAORIG) || (l1 == DR1 + DATAORIG)) {
 			dval = dmem[l2];
 			dsto(l1, dval);
@@ -321,10 +319,10 @@ void pmem(int sz) {
 	printf("DR1: %lf\n", dr1);
 
 	for (int i = 0; i < sz; i++) {
-		printf("DATA\t[%d]:\t%lld\n", i, mem[DATAORIG+i]);
+		printf("DATA\t[%d]:\t%lld\n", DATAORIG + i, mem[DATAORIG + i]);
 	}
-	for (int i = 0; i < sz; i++) {
-		printf("FDATA\t[%d]:\t%lf\n", i, dmem[i]);
+	for (int i = 0; i < sz; ++i) {
+		printf("FDATA\t[%d]:\t%lf\n", 1024 + i, dmem[1024 + i]);
 	}
 	for (int i = 0; i < sz; i++) {
 		printf("VAR\t[%d]:\t%s\tMEM[%d]\t%d\n", i, var_area[i].sym, var_area[i].a, var_area[i].sz);
@@ -336,7 +334,7 @@ int readp(int a) {
 	if (!inst) { end(); return 0; }
 	short m = mem[a] >> 3 & 0xffff;
 	long long int o = mem[a] >> VSHIFT;
-	short ex = mem[a] >> 19 & 0x1;
+	char ex = mem[a] >> 19 & 7;
 
 	switch (inst) {
 	case STO: 
@@ -358,7 +356,7 @@ int readp(int a) {
 		inc(m, o);
 		break;
 	case CMP:
-		cmp(m, (short) o, r15, ex);	
+		cmp(m, (short) o, ex);	
 		break;
 	default:
 		return -1;
@@ -368,9 +366,10 @@ int readp(int a) {
 
 long long int enc(int i, int m, long long int v) {
 	long long int* ad = malloc(sizeof(long long int));
+	if (ad == NULL) exit(-200);
 	long long int r = 0;
 	r += (long long int)v << VSHIFT;
-	r += (short) (m << 3);
+	r += (short)(m) << 3;
 	r += i;
 	ad[0] = r;
 	return *ad;
@@ -378,10 +377,11 @@ long long int enc(int i, int m, long long int v) {
 
 long long int enc4(int i, int m, long long int v, char ex) {
 	long long int* ad = malloc(sizeof(long long int));
+	if (ad == NULL) exit(-200);
 	long long int r = 0;
 	r += (long long int)v << VSHIFT;
-	r += ex << 19;
-	r += (short)(m << 3);
+	r += (char)(ex) << 19;
+	r += (short)(m) << 3;
 	r += i;
 	ad[0] = r;
 	return *ad;
@@ -389,8 +389,9 @@ long long int enc4(int i, int m, long long int v, char ex) {
 
 long long int enc1(int i, int m) {
 	long long int* ad = malloc(sizeof(long long int));
+	if (ad == NULL) exit(-200);
 	long long int r = 0;
-	r += (short) (m << 3);
+	r += (short)(m) << 3;
 	r += i;
 	ad[0] = r;
 	return *ad;
@@ -401,6 +402,7 @@ void loadp(char* fn) {
 	FILE* f;
 	int e;
 	int len = 80;
+	char er15 = 0;
 	char* l = malloc(len);
 	char* tok = NULL;
 	char* ltok = NULL;
@@ -698,7 +700,8 @@ void loadp(char* fn) {
 		else if (strcmp(instr, "CMP") == 0) {
 			/* uses r15 registry. destroyed each time CMP is called */
 			/* walk through other tokens */
-			r15 = 0;
+			//r15 = 0;
+			
 			er15 = 0;
 			tok = strtok(NULL, "|");
 			strcpy(m, tok);
@@ -749,17 +752,17 @@ void loadp(char* fn) {
 			DT(md);
 
 			if (strcmp(md, STRFY(LSS)) == 0)
-				r15 = (char)LSS;
+				er15 = (char)LSS;
 			else if (strcmp(md, STRFY(GTT)) == 0)
-				r15 = (char)GTT;
+				er15 = (char)GTT;
 			else if (strcmp(md, STRFY(LSE)) == 0)
-				r15 = (char)LSE;
+				er15 = (char)LSE;
 			else if (strcmp(md, STRFY(GTE)) == 0)
-				r15 = (char)GTE;
+				er15 = (char)GTE;
 			else if (strcmp(md, STRFY(EQL)) == 0)
-				r15 = (char)EQL;
+				er15 = (char)EQL;
 			else if (strcmp(md, STRFY(DBL)) == 0)
-				er15 = 1;
+				er15 = (char)DBL;
 			else {
 				printf("\nSyntax Error in CMP\n"); exit(-12);
 			}
