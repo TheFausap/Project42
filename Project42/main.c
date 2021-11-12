@@ -96,6 +96,15 @@ int get_var(char* s) {
 	exit(-20);
 }
 
+int get_size(int a) {
+	for (int i = 0;i<var_count;i++) 
+		if (var_area[i].a == a) {
+			return var_area[i].sz;
+		}
+	printf("\nNo variable stored in that mem location\n");
+	exit(-21);
+}
+
 int get_lab(char* s) {
 	for (int i = 0; i < lab_count; i++)
 		if (strcmp(s, labels[i].sym) == 0) {
@@ -137,24 +146,6 @@ void sto(short a, long long int v) {
 				mem[v] + mem[indexes[pc]]
 				: mem[v])
 			: v;
-	}
-	else if (a < 0) {
-		switch (a) {
-			case -1: 
-				r0 = (ind[pc] == 1) ? 
-					((indexes[pc] > 0) ? 
-					 mem[v] + mem[indexes[pc]] 
-					 : mem[v]) 
-					:v;
-				break;
-			case -2:
-				r1 = (ind[pc] == 1) ?
-                                        ((indexes[pc] > 0) ?
-                                         mem[v] + mem[indexes[pc]]
-                                         : mem[v])
-                                        :v;
-                                break;
-		}
 	}
 	else
 		mem[D(a)] = v;
@@ -204,15 +195,6 @@ void dec(short a, long long int v) {
 		a1 += (indexes[pc] > 0) ? mem[indexes[pc]] : 0;
 		mem[a1] -= (ind[pc] == 1) ? mem[v] : v;
 	}
-	else if (a < 0) {
-		switch (a) {
-			case -1:
-				r0 -= (ind[pc] == 1) ? mem[v] : v;
-				break;
-			case -2:
-				r1 -= (ind[pc] == 1) ? mem[v] : v;
-		}
-	}
 	else
 		mem[D(a)] -= v;
 }
@@ -225,15 +207,6 @@ void inc(short a, long long int v) {
 		a1 += (indexes[pc] > 0) ? mem[indexes[pc]] : 0;
 		mem[a1] += (ind[pc] == 1) ? mem[v] : v;
 	}
-	else if (a < 0) {
-                switch (a) {
-                        case -1:
-                                r0 += (ind[pc] == 1) ? mem[v] : v;
-                                break;
-                        case -2:
-                                r1 += (ind[pc] == 1) ? mem[v] : v;
-                }
-        }
 	else
 		mem[D(a)] += v;
 }
@@ -266,8 +239,13 @@ void cmp(short l1, short l2, char em) {
 		flags = mem[l11] == mem[l22];
 		break;
 	case DBL:
+	/* Moving into DR0 or DR1 */
+	/* Can be either a floating-point var or an integer var */
 		if ((l1 == DR0 + DATAORIG) || (l1 == DR1 + DATAORIG)) {
-			dval = dmem[l2];
+			if (l2 >= 1024) {
+				dval = (get_size(l2) < 0) ? dmem[l2] : mem[l2];
+			} else
+				dval = l2;
 			dsto(l1, dval);
 		}
 		else {
@@ -291,7 +269,6 @@ void cmp(short l1, short l2, char em) {
 			}
 		}
 	}
-	em = 0;
 	flags = flags << 2;
 }
 
@@ -315,14 +292,14 @@ void pmem(int sz) {
 	printf("R0: %lld\n", r0);
 	printf("R1: %lld\n", r1);
 
-	printf("DR0: %lf\n", dr0);
-	printf("DR1: %lf\n", dr1);
+	printf("DR0: %Lf\n", dr0);
+	printf("DR1: %Lf\n", dr1);
 
 	for (int i = 0; i < sz; i++) {
 		printf("DATA\t[%d]:\t%lld\n", DATAORIG + i, mem[DATAORIG + i]);
 	}
 	for (int i = 0; i < sz; ++i) {
-		printf("FDATA\t[%d]:\t%lf\n", 1024 + i, dmem[1024 + i]);
+		printf("FDATA\t[%d]:\t%Lf\n", 1024 + i, dmem[1024 + i]);
 	}
 	for (int i = 0; i < sz; i++) {
 		printf("VAR\t[%d]:\t%s\tMEM[%d]\t%d\n", i, var_area[i].sym, var_area[i].a, var_area[i].sz);
