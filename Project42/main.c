@@ -40,11 +40,11 @@ typedef struct {
 } LE;
 
 VE var_area[50] = { 0,0,0 };
-LE labels[50] = { 0,0 };
+LE labels[100] = { 0,0 };
 int var_count = 0;
 int lab_count = 0;
 
-enum {END=0,STO,LDM,JMP,DEC,INC,JNZ,CMP};
+enum {NOP=0,STO,LDM,JMP,DEC,INC,JNZ,CMP};
 
 #define LSS 0
 #define GTT 1
@@ -308,12 +308,17 @@ void pmem(int sz) {
 
 int readp(int a) {
 	int inst = mem[a] & 7;
-	if (!inst) { end(); return 0; }
+	// if (!inst) { end(); return 0; }
 	short m = mem[a] >> 3 & 0xffff;
 	long long int o = mem[a] >> VSHIFT;
 	char ex = mem[a] >> 19 & 7;
 
 	switch (inst) {
+	case NOP:
+		if ((m == 1) && (o == 1)) {
+			end();
+		}
+		break;
 	case STO: 
 		sto(m, o);
 		break;
@@ -424,7 +429,11 @@ void loadp(char* fn) {
 		}
 
 		if (strcmp(instr, "END") == 0) {
+			enc(NOP,1,1);
 			break;
+		}
+		else if (strcmp(instr, "NOP") == 0) {
+			continue;
 		}
 		else if (strcmp(instr, "STO") == 0) {
 			/* walk through other tokens */
