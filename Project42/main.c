@@ -433,6 +433,7 @@ void loadp(char* fn) {
 			break;
 		}
 		else if (strcmp(instr, "NOP") == 0) {
+			enc(NOP,0,0);
 			continue;
 		}
 		else if (strcmp(instr, "STO") == 0) {
