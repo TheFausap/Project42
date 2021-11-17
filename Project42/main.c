@@ -253,7 +253,7 @@ void cmp(short l1, short l2, char em) {
             if (l2 >= 1024) {
                 dval = (get_size(l2) < 0) ? dmem[l2] : mem[l2];
             } else
-                dval = l2;
+                dval = dmem[l2];
             dsto(l1, dval);
         }
         else {
