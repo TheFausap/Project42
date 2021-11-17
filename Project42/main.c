@@ -226,7 +226,8 @@ void end(void) {
 void cmp(short l1, short l2, char em) {
     short l11 = 0;
     short l22 = 0;
-    long double dval = 0;
+    long double dval = 0.0;
+    //l2 = (em == DBL) ? l2 : (short) l2;
     l11 = ((l1 >= DATAORIG) && (l1 <= DATAOFF)) ? l1 : D(l1);
     l22 = ((l2 >= DATAORIG) && (l2 <= DATAOFF)) ? l2 : D(l2);
     
@@ -272,6 +273,7 @@ void cmp(short l1, short l2, char em) {
                 break;
             case DMOV:
                 /* no address conversion needed */
+                l2 += (indexes[pc] > 0) ? mem[indexes[pc]] : 0;
                 dmem[l2] = dr0;
                 break;
             }
@@ -725,7 +727,28 @@ void loadp(char* fn) {
             tok = strtok(NULL, "|");
             strcpy(v, tok);
             if (isalpha(v[0]))
-                v1 = get_var(v);
+                if ((ipos = strstr(v, "#")) != NULL) {
+                    /* variable indexing */
+                    strcpy(varline, v);
+                    char* res = strchr(varline, '#');
+                    strcpy(idx, res);
+                    DH(idx);
+                    if (isalpha(idx[0])) {
+                        idx1 = get_var(idx);
+                        indexes[loc] = idx1;
+                        varline[(res - varline)] = '\0';
+                        strcpy(v, varline);
+                        v1 = get_var(v);
+                    }
+                    else {
+                        idx1 = atoi(idx);
+                        varline[(res - varline)] = '\0';
+                        strcpy(v, varline);
+                        v1 = get_var(v) + idx1;
+                    }
+                }
+                else
+                    v1 = get_var(v);
             else if (strchr(v, '.') != NULL) {
                 if (((m1 - DATAORIG) == DR0) || ((m1 - DATAORIG) == DR1)) {
                     dmem[dmemp] = strtold(v, NULL);
