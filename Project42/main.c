@@ -799,14 +799,15 @@ void loadp(char* fn) {
             DT(m);
             //procs[get_lab(m)] = loc;
             mem[loc] = enc1(JMP, get_lab(m));
-            mem[STACKORIG + callpos] = enc1(JMP, loc+1);
-            callpos++;
+            mem[procs[get_lab(m)]] = enc1(JMP, loc+1);
+            //callpos++;
         }
         else if (strcmp(instr, "RET") == 0) {
             /* returns from a proc */
             tok = strtok(NULL, "|");
             strcpy(m, tok);
             DT(m);
+            procs[get_lab(m)] = STACKORIG + retpos;
             mem[loc] = enc1(JMP, STACKORIG + retpos);
             retpos++;
         }
