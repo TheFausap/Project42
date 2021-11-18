@@ -585,8 +585,9 @@ void loadp(char* fn) {
                 m1 = atoi(m);
             tok = strtok(NULL, "|");
             strcpy(v, tok);
-            if (ispunct(v[0])) {
-                DH(v); DT(v);
+            if (isalpha(v[0])) {
+                //DH(v); 
+                DT(v);
                 
                 v1 = get_var(v);
                 ind[loc] = 1;
