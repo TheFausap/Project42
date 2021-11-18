@@ -489,7 +489,7 @@ void loadp(char* fn) {
             tok = strtok(NULL, "|");
             strcpy(v, tok);
             idx1 = 0;
-            if (ispunct(v[0])) {
+            if (isalpha(v[0])) {
                 if ((ipos = strstr(v, "#")) != NULL) {
                                 /* variable indexing */
                     strcpy(varline, v);
@@ -508,7 +508,8 @@ void loadp(char* fn) {
                     ind[loc] = 1;
                 }
                 else {
-                    DH(v); DT(v);
+                    //DH(v); 
+                    DT(v);
                     v1 = get_var(v);
                     ind[loc] = 1;
                 }
@@ -639,8 +640,9 @@ void loadp(char* fn) {
                 m1 = atoi(m);
             tok = strtok(NULL, "|");
             strcpy(v, tok);
-            if (ispunct(v[0])) {
-                DH(v); DT(v);
+            if (isalpha(v[0])) {
+                //DH(v); 
+                DT(v);
                 v1 = get_var(v);
                 ind[loc] = 1;
             }
