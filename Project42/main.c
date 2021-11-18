@@ -12,6 +12,7 @@
 
 #define MEMSIZE 32767
 #define DATAORIG 2048
+#define STACKORIG DATAORIG-256
 
 #define VSHIFT 22
 
@@ -22,6 +23,8 @@ short dmemp = 0;
 int DATAOFF = DATAORIG;       /* max prog size in byte */
 int DDATAOFF = 1024;          /* 1KB reserved */
 int pc = 0;
+int retpos = 0;
+int callpos = 0;
 
 long long int r0 = 0;
 long long int r1 = 0;
@@ -793,14 +796,19 @@ void loadp(char* fn) {
             /* calling func or proc */
             tok = strtok(NULL, "|");
             strcpy(m, tok);
-            procs[get_lab(m)] = pc;
-            enc1(JMP, get_lab(m));
+            DT(m);
+            //procs[get_lab(m)] = loc;
+            mem[loc] = enc1(JMP, get_lab(m));
+            mem[STACKORIG + callpos] = enc1(JMP, loc+1);
+            callpos++;
         }
         else if (strcmp(instr, "RET") == 0) {
             /* returns from a proc */
             tok = strtok(NULL, "|");
             strcpy(m, tok);
-            enc1(JMP, procs[get_lab(m)]);
+            DT(m);
+            mem[loc] = enc1(JMP, STACKORIG + retpos);
+            retpos++;
         }
         else if (strcmp(instr, "VAR") == 0) {
             /* pseudo instruction */
