@@ -23,8 +23,7 @@ short dmemp = 0;
 int DATAOFF = DATAORIG;       /* max prog size in byte */
 int DDATAOFF = 1024;          /* 1KB reserved */
 int pc = 0;
-int retpos = 0;
-int callpos = 0;
+int stackpos = 0;
 
 long long int r0 = 0;
 long long int r1 = 0;
@@ -797,19 +796,17 @@ void loadp(char* fn) {
             tok = strtok(NULL, "|");
             strcpy(m, tok);
             DT(m);
-            //procs[get_lab(m)] = loc;
             mem[loc] = enc1(JMP, get_lab(m));
             mem[procs[get_lab(m)]] = enc1(JMP, loc+1);
-            //callpos++;
         }
         else if (strcmp(instr, "RET") == 0) {
             /* returns from a proc */
             tok = strtok(NULL, "|");
             strcpy(m, tok);
             DT(m);
-            procs[get_lab(m)] = STACKORIG + retpos;
-            mem[loc] = enc1(JMP, STACKORIG + retpos);
-            retpos++;
+            procs[get_lab(m)] = STACKORIG + stackpos;
+            mem[loc] = enc1(JMP, STACKORIG + stackpos);
+            stackpos++;
         }
         else if (strcmp(instr, "VAR") == 0) {
             /* pseudo instruction */
