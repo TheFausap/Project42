@@ -253,6 +253,7 @@ void cmp(short l1, short l2, char em) {
         if ((l1 == DR0 + DATAORIG) || (l1 == DR1 + DATAORIG)) {
             if (l2 >= 1024) {
                 dval = (get_size(l2) < 0) ? dmem[l2] : mem[l2];
+                dval += (indexes[pc] > 0) ? mem[indexes[pc]] : 0;
             } else
                 dval = dmem[l2];
             dsto(l1, dval);
@@ -694,7 +695,6 @@ void loadp(char* fn) {
             mem[loc] = enc1(JNZ, m1);
         }
         else if (strcmp(instr, "CMP") == 0) {
-            /* uses r15 registry. destroyed each time CMP is called */
             /* walk through other tokens */
             //r15 = 0;
             
@@ -741,6 +741,7 @@ void loadp(char* fn) {
                         v1 = get_var(v);
                     }
                     else {
+                        /* numerical index */
                         idx1 = atoi(idx);
                         varline[(res - varline)] = '\0';
                         strcpy(v, varline);
