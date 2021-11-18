@@ -29,11 +29,10 @@ long long int r1 = 0;
 long double dr0 = 0.0;
 long double dr1 = 0.0;
 
-//short r15 = 0;
-//short er15 = 0;
 char flags = 0;
 char ind[DATAORIG] = { 0 };
 short indexes[DATAORIG] = { 0 };
+short procs[DATAORIG] = { 0 };
 
 typedef struct {
     char sym[10];
@@ -789,6 +788,19 @@ void loadp(char* fn) {
             }
 
             mem[loc] = enc4(CMP, m1, v1, er15);
+        }
+        else if (strcmp(instr, "CALL") == 0) {
+            /* calling func or proc */
+            tok = strtok(NULL, "|");
+            strcpy(m, tok);
+            procs[get_lab(m)] = pc;
+            enc1(JMP, get_lab(m));
+        }
+        else if (strcmp(instr, "RET") == 0) {
+            /* returns from a proc */
+            tok = strtok(NULL, "|");
+            strcpy(m, tok);
+            enc1(JMP, procs[get_lab(m)]);
         }
         else if (strcmp(instr, "VAR") == 0) {
             /* pseudo instruction */
