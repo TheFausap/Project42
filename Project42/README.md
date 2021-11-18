@@ -128,7 +128,7 @@ Must be at the beginning of the program.
 The format is
 
 ```
-[<L>:]STO|<M> or <V>[#<N> or <V>] or R0|1|<N> or [@]<V>[#<N> or <V>]
+[<L>:]STO|<M> or <V>[#<N> or <V>] or R0|1|<N> or <V>[#<N> or <V>]
 ```
 
 It stores a value or a content of a variable in a memory location pointed by a integer number or a variable name.
@@ -151,12 +151,12 @@ Copy memory locations (like memcpy in C), but it can also use variables. It's mo
 The format is
 
 ```
-[<L>:]DEC|<M> or <V>[#<N> or <V>] or R0 or R1 |<N> or [@]<V>
+[<L>:]DEC|<M> or <V>[#<N> or <V>] or R0 or R1 |<N> or <V>
 ```
 
 
 ```
-[<L>:]INC|<M> or <V>[#<N> or <V>] or R0 or R1 |<N> or [@]<V>
+[<L>:]INC|<M> or <V>[#<N> or <V>] or R0 or R1 |<N> or <V>
 ```
 
 It adds or subtract the value specified by an integer number or the contect of the variable, to the value stored at memory location (direct address) or variable.
@@ -263,9 +263,9 @@ STO|A|0
 STO|B|1
 L1:CMP|C|MAXITER|GTE
 JNZ|L2
-STO|T|@B
-INC|B|@A
-STO|A|@T
+STO|T|B
+INC|B|A
+STO|A|T
 INC|C|1
 JMP|L1
 L2:END

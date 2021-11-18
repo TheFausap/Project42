@@ -274,7 +274,7 @@ void cmp(short l1, short l2, char em) {
                 break;
             case DMOV:
                 /* no address conversion needed */
-                l2 += (indexes[pc] > 0) ? mem[indexes[pc]] : 0;
+                l2 += (indexes[pc] > 0) ? (short) mem[indexes[pc]] : 0;
                 dmem[l2] = dr0;
                 break;
             }
