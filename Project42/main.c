@@ -304,13 +304,18 @@ void cmp(short l1, short l2, char em) {
             }
         }
     case OUTB:
-        if (get_size(l2) > 0) {
-            for (int i=0;i<=l1;i++)
-                printf("%lld", mem[l22+i]);
+        if (l2 <= 127) {
+            printf("%c", l2);
         }
         else {
-            for (int i=0;i<=l1;i++)
-                printf("%lf", dmem[l2+i]);
+            if (get_size(l2) > 0) {
+                for (int i = 0; i <= l1; i++)
+                    printf("%lld", mem[l22 + i]);
+            }
+            else {
+                for (int i = 0; i <= l1; i++)
+                    printf("%lf", dmem[l2 + i]);
+            }
         }
         break;
     }
@@ -848,7 +853,7 @@ void loadp(char* fn) {
             /* Get the second argument */
             tok = strtok(NULL, "|");
             strcpy(v, tok);
-            if (isalpha(v[0]))
+            if (isalpha(v[0]) || v[0] == '\'')
                 if ((ipos = strstr(v, "#")) != NULL) {
                     /* variable indexing */
                     strcpy(varline, v);
@@ -869,6 +874,12 @@ void loadp(char* fn) {
                         strcpy(v, varline);
                         v1 = get_var(v) + idx1;
                     }
+                }
+                else if ((ipos = strstr(v, "'")) != NULL) {
+                    if (v[2] == 'n')
+                        v1 = '\n';
+                    else
+                        v1 = 0;
                 }
                 else
                     v1 = get_var(v);

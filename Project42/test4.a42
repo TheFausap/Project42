@@ -13,8 +13,9 @@ Lg1:CMP|i|g1|GTT
 JNZ|Lg2
 INC|a|1
 CALL|Lesb
+CMP|0|a|OUTB
+CMP|1|'\n'|OUTB
 INC|i|1
 JMP|Lg1
 Lg2:NOP|
-CMP|0|a|OUTB
 L99:END|
