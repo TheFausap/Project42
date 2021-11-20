@@ -304,7 +304,8 @@ void cmp(short l1, short l2, char em) {
             }
         }
     case OUTB:
-        if (l2 <= 127) {
+        if (l2 <= 127) { 
+            /* ASCII */
             printf("%c", l2);
         }
         else {
@@ -878,8 +879,10 @@ void loadp(char* fn) {
                 else if ((ipos = strstr(v, "'")) != NULL) {
                     if (v[2] == 'n')
                         v1 = '\n';
+                    else if (v[2] == 't')
+                        v1 = '\t';
                     else
-                        v1 = 0;
+                        v1 = v[1];
                 }
                 else
                     v1 = get_var(v);
