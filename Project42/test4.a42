@@ -16,4 +16,5 @@ CALL|Lesb
 INC|i|1
 JMP|Lg1
 Lg2:NOP|
+CMP|0|a|OUTB
 L99:END|

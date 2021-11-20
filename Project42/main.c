@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include "getopt.h"
 
 #define MEMSIZE 32767
 #define DATAORIG 2048
@@ -25,6 +26,9 @@ int DATAOFF = DATAORIG;       /* max prog size in byte */
 int DDATAOFF = 1024;          /* 1KB reserved */
 int pc = 0;
 int stackpos = 0;
+
+char fl_d = 0;                /* used for display output options */
+char fl_l = 0;                /* used for listing */
 
 long long int r0 = 0;
 long long int r1 = 0;
@@ -67,6 +71,10 @@ enum {NOP=0,STO,LDM,JMP,DEC,INC,JNZ,CMP};
 #define DMUL 52 /* perform the related arith operation */
 #define DDIV 53 /* perform the related arith operation */
 #define DMOV 54 /* move double data from reg R0 or R1 into DMEM */
+
+#define OUTB 6 /* 6+ 0 printing byte */
+#define OUTS 6 /* 6+ 1 printing string */
+#define OUTA 6 /* 6+ 2 printing array of byte */
 
 #define DR0  55
 #define DR1  56
@@ -295,6 +303,16 @@ void cmp(short l1, short l2, char em) {
                 break;
             }
         }
+    case OUTB:
+        if (get_size(l2) > 0) {
+            for (int i=0;i<=l1;i++)
+                printf("%lld", mem[l22+i]);
+        }
+        else {
+            for (int i=0;i<=l1;i++)
+                printf("%lf", dmem[l2+i]);
+        }
+        break;
     }
     flags = flags << 2;
 }
@@ -310,34 +328,35 @@ void jnz(int ad) {
     }
 }
 
-void pmem(int sz) {
-    printf("\n");
-    for (int i = 0; i < sz; i++) {
-        printf("MEM\t[%d]:\t%lld\n", i, mem[i]);
-    }
-
-    printf("R0: %lld\n", r0);
-    printf("R1: %lld\n", r1);
-
-    printf("DR0: %Lf\n", dr0);
-    printf("DR1: %Lf\n", dr1);
-
-    for (int i = 0; i < sz; i++) {
-        printf("DATA\t[%d]:\t%lld\n", DATAORIG + i, mem[DATAORIG + i]);
-    }
-    for (int i = 0; i < sz; ++i) {
-        printf("FDATA\t[%d]:\t%Lf\n", 1024 + i, dmem[1024 + i]);
-    }
-    for (int i = 0; i < sz; i++) {
-        printf("VAR\t[%d]:\t%s\tMEM[%d]\t%d\n", i, var_area[i].sym, var_area[i].a, var_area[i].sz);
-    }
-}
+//void pmem(int sz) {
+//    printf("\n");
+//    for (int i = 0; i < sz; i++) {
+//        printf("MEM\t[%d]:\t%lld\n", i, mem[i]);
+//    }
+//
+//    printf("R0: %lld\n", r0);
+//    printf("R1: %lld\n", r1);
+//
+//    printf("DR0: %Lf\n", dr0);
+//    printf("DR1: %Lf\n", dr1);
+//
+//    for (int i = 0; i < sz; i++) {
+//        printf("DATA\t[%d]:\t%lld\n", DATAORIG + i, mem[DATAORIG + i]);
+//    }
+//    for (int i = 0; i < sz; ++i) {
+//        printf("FDATA\t[%d]:\t%Lf\n", 1024 + i, dmem[1024 + i]);
+//    }
+//    for (int i = 0; i < sz; i++) {
+//        printf("VAR\t[%d]:\t%s\tMEM[%d]\t%d\n", i, var_area[i].sym, var_area[i].a, var_area[i].sz);
+//    }
+//}
 
 void prcols(int c, int sz) {
     printf("\n");
     int l1 = sz / c;
     int l2 = sz % c;
 
+    printf("\n *** DEBUG INFO ***\n");
     printf("REGISTRY DUMP\n");
     printf("R0:  %lld\n", r0);
     printf("R1:  %lld\n", r1);
@@ -414,10 +433,6 @@ void prcols(int c, int sz) {
             printf("[%02d]: %s\n", i, itob(mem[i]));
     }
     printf("--------------\n");
-//if l2 > 0:
-//    for j in range(l - c * l1) :
-//        print(d[c * l1 + j], end = '\t')
-//        print("")
 }
     
 
@@ -516,7 +531,7 @@ void loadp(char* fn) {
     int idx1 = 0;
 
 
-    printf("\nReading program\n");
+    if (fl_l) printf("\nReading program\n");
 #ifdef _WIN32
     e = fopen_s(&f,fn, "r");
     if (e != 0) exit(-10);
@@ -525,7 +540,7 @@ void loadp(char* fn) {
     if (f == NULL) exit(-10);
 #endif
     while (fgets(l, len, f) != NULL) {
-        printf("LINE\t(%d):\t%s", loc, l);
+        if (fl_l) printf("LINE\t(%d):\t%s", loc, l);
     
         /* get the first token */
         /* OPCODE */
@@ -888,6 +903,12 @@ void loadp(char* fn) {
                 er15 = (char)EQL;
             else if (strcmp(md, STRFY(DBL)) == 0)
                 er15 = (char)DBL;
+            else if (strcmp(md, STRFY(OUTB)) == 0)
+                er15 = (char)OUTB;
+            else if (strcmp(md, STRFY(OUTS)) == 0)
+                er15 = (char)OUTS;
+            else if (strcmp(md, STRFY(OUTA)) == 0)
+                er15 = (char)OUTA;
             else {
                 printf("\nSyntax Error in CMP\n"); exit(-12);
             }
@@ -922,7 +943,7 @@ void loadp(char* fn) {
         }
         loc++;
     }
-    printf("\nEnd of listing\n");
+    if (fl_l) printf("\nEnd of listing\n");
     free(l);
     free(m);
     free(v);
@@ -930,12 +951,45 @@ void loadp(char* fn) {
 }
 
 int main(int argc, char **argv) {
-    loadp(argv[1]);
+    int opt;
+    int c;
+    
+    char fn[20];
+
+    static struct option long_options[] = {
+        {"debug", 0, 0, 'd'},
+        {"list", 0, 0, 'l'},
+        {0, 0, 0, 0}
+    };
+
+    while ((c = getopt_long(argc, argv, "-dl", long_options, &opt)) != -1) {
+        switch (c) {
+        case 0:
+            printf("long option %s", long_options[opt].name);
+            if (optarg)
+                printf(" with arg %s", optarg);
+            printf("\n");
+            break;
+        case 1:
+            //printf("regular argument '%s'\n", optarg); /* non-option arg */
+            strcpy(fn, optarg);
+            break;
+        case 'd':
+            fl_d++;
+            break;
+        case 'l':
+            fl_l++;
+            break;
+        }
+    }
+
+    loadp(fn);
     while (pc >= 0) {
         readp(pc);
         pc++;
     }
-    //pmem(30);
-    prcols(3, 30);
+    
+    if (fl_d) prcols(3, 30);
+
     return 0;
 }
