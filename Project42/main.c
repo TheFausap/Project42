@@ -338,9 +338,9 @@ void prcols(int c, int sz) {
     int l1 = sz / c;
     int l2 = sz % c;
 
-    printf("R0: %lld\n", r0);
-    printf("R1: %lld\n", r1);
-    printf("--------------\n");
+    printf("REGISTRY DUMP\n");
+    printf("R0:  %lld\n", r0);
+    printf("R1:  %lld\n", r1);
     printf("DR0: %Lf\n", dr0);
     printf("DR1: %Lf\n", dr1);
     printf("--------------\n");
@@ -363,6 +363,7 @@ void prcols(int c, int sz) {
                 printf("%s\t @%04d\t{%02d}\t", var_area[c * l1 + j].sym, var_area[c * l1 + j].a, var_area[c * l1 + j].sz);
         }
     }
+    printf("--------------\n");
     printf("DATA DUMP\n");
     for (int j = 0; j < l1; j++) {
         for (int i = 0; i < c; i++) {
