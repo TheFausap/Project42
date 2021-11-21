@@ -14,7 +14,7 @@ JNZ|Lg2
 INC|a|1
 CALL|Lesb
 CMP|0|a|OUTB
-CMP|1|'\n'|OUTB
+CMP|1|'\t'|OUTB
 INC|i|1
 JMP|Lg1
 Lg2:NOP|

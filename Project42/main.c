@@ -73,8 +73,7 @@ enum {NOP=0,STO,LDM,JMP,DEC,INC,JNZ,CMP};
 #define DMOV 54 /* move double data from reg R0 or R1 into DMEM */
 
 #define OUTB 6 /* 6+ 0 printing byte */
-#define OUTS 6 /* 6+ 1 printing string */
-#define OUTA 6 /* 6+ 2 printing array of byte */
+#define OUTA 7 /* 6+ 2 printing array of byte (num or str) */
 
 #define DR0  55
 #define DR1  56
@@ -317,6 +316,11 @@ void cmp(short l1, short l2, char em) {
                 for (int i = 0; i <= l1; i++)
                     printf("%lf", dmem[l2 + i]);
             }
+        }
+        break;
+    case OUTA:
+        for (int j = 0; j < get_size(l22); j++) {
+            printf("%c", (char) mem[l22]);
         }
         break;
     }
@@ -854,7 +858,7 @@ void loadp(char* fn) {
             /* Get the second argument */
             tok = strtok(NULL, "|");
             strcpy(v, tok);
-            if (isalpha(v[0]) || v[0] == '\'')
+            if (isalpha(v[0]) || v[0] == '\'' || v[0] == '\"')
                 if ((ipos = strstr(v, "#")) != NULL) {
                     /* variable indexing */
                     strcpy(varline, v);
@@ -876,7 +880,7 @@ void loadp(char* fn) {
                         v1 = get_var(v) + idx1;
                     }
                 }
-                else if ((ipos = strstr(v, "'")) != NULL) {
+                else if (v[0] == '\'') {
                     if (v[2] == 'n')
                         v1 = '\n';
                     else if (v[2] == 't')
@@ -919,8 +923,6 @@ void loadp(char* fn) {
                 er15 = (char)DBL;
             else if (strcmp(md, STRFY(OUTB)) == 0)
                 er15 = (char)OUTB;
-            else if (strcmp(md, STRFY(OUTS)) == 0)
-                er15 = (char)OUTS;
             else if (strcmp(md, STRFY(OUTA)) == 0)
                 er15 = (char)OUTA;
             else {
