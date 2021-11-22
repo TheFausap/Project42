@@ -319,8 +319,8 @@ void cmp(short l1, short l2, char em) {
         }
         break;
     case OUTA:
-        for (int j = 0; j < get_size(l22); j++) {
-            printf("%c", (char) mem[l22]);
+        for (int j = 0; j < l1; j++) {
+            printf("%c", (char) mem[l22+j]);
         }
         break;
     }
