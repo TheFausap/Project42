@@ -302,6 +302,7 @@ void cmp(short l1, short l2, char em) {
                 break;
             }
         }
+        break;
     case OUTB:
         if (l2 <= 127) { 
             /* ASCII */
@@ -313,7 +314,7 @@ void cmp(short l1, short l2, char em) {
                     printf("%lld", mem[l22 + i]);
             }
             else {
-                for (int i = 0; i <= l1; i++)
+                for (int i = 0; i < abs(get_size(l2)); i++)
                     printf("%lf", dmem[l2 + i]);
             }
         }
