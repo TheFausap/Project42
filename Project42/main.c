@@ -63,17 +63,19 @@ enum {NOP=0,STO,LDM,JMP,DEC,INC,JNZ,CMP};
 #define GTT 1
 #define LSE 2
 #define GTE 3
-#define EQL 4
-#define DBL 5  /* used to store a double val in dr0 or dr1 */
 
+#define EQL 4
+#define NEQ 40  /* 7 bit of flags to 1 */
+
+#define DBL 5   /* used to store a double val in dr0 or dr1 */
 #define DADD 50 /* perform the related arith operation */
 #define DSUB 51 /* perform the related arith operation */
 #define DMUL 52 /* perform the related arith operation */
 #define DDIV 53 /* perform the related arith operation */
 #define DMOV 54 /* move double data from reg R0 or R1 into DMEM */
 
-#define OUTB 6 /* 6+ 0 printing byte */
-#define OUTA 7 /* 6+ 2 printing array of byte (num or str) */
+#define OUTB 6  /* 6+ 0 printing byte */
+#define OUTA 7  /* 6+ 2 printing array of byte (num or str) */
 
 #define DR0  55
 #define DR1  56
@@ -250,7 +252,7 @@ void cmp(short l1, short l2, char em) {
     short l11 = 0;
     short l22 = 0;
     long double dval = 0.0;
-    //l2 = (em == DBL) ? l2 : (short) l2;
+    
     l11 = ((l1 >= DATAORIG) && (l1 <= DATAOFF)) ? l1 : D(l1);
     l22 = ((l2 >= DATAORIG) && (l2 <= DATAOFF)) ? l2 : D(l2);
     
@@ -267,8 +269,12 @@ void cmp(short l1, short l2, char em) {
     case GTE:
         flags = mem[l11] >= mem[l22];
         break;
-    case EQL:
-        flags = mem[l11] == mem[l22];
+    case EQL: /* or NEQ */
+        if (flags < 0) {
+            flags = mem[l11] != mem[l22];
+        }
+        else
+            flags = mem[l11] == mem[l22];
         break;
     case DBL:
     /* Moving into DR0 or DR1 */
@@ -920,6 +926,10 @@ void loadp(char* fn) {
                 er15 = (char)GTE;
             else if (strcmp(md, STRFY(EQL)) == 0)
                 er15 = (char)EQL;
+            else if (strcmp(md, STRFY(NEQ)) == 0) {
+                er15 = (char)EQL;
+                flags = -1;
+            }
             else if (strcmp(md, STRFY(DBL)) == 0)
                 er15 = (char)DBL;
             else if (strcmp(md, STRFY(OUTB)) == 0)
