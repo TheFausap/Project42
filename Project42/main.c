@@ -18,6 +18,9 @@
 
 #define VSHIFT 22
 
+#define MAXVAR 100
+#define MAXLAB 100
+
 long long int mem[MEMSIZE] = { 0 };
 long double dmem[MEMSIZE] = { 0.0 };
 short dmemp = 0;
@@ -45,6 +48,7 @@ typedef struct {
     char sym[10];
     int a;                /* position in the DATA MEM */
     int sz;
+    char reuse;           /* 1 if possible reuse. a sort of GC */
 } VE;
 
 typedef struct {
@@ -52,8 +56,8 @@ typedef struct {
     int a;                /* position in the DATA MEM */
 } LE;
 
-VE var_area[50] = { 0,0,0 };
-LE labels[100] = { 0,0 };
+VE var_area[MAXVAR] = { 0,0,0,0 };
+LE labels[MAXLAB] = { 0,0 };
 int var_count = 0;
 int lab_count = 0;
 
@@ -103,20 +107,40 @@ char* itob(long long int n) {
 }
 
 void var(char* s, int sz) {
-    strncpy(var_area[var_count].sym, s, 9);
+    int vpos = var_count;
+
+    for (int i = 0; i < var_count; i++) {
+        if (var_area[i].reuse == 1) {
+            vpos = i;
+            break;
+        }
+    }
+    
+    strncpy(var_area[vpos].sym, s, 9);
     if (sz < 0) {
         /* negative size means floating-point variable */
-        var_area[var_count].a = DDATAOFF;
-        var_area[var_count].sz = sz;
+        var_area[vpos].a = DDATAOFF;
+        var_area[vpos].sz = sz;
         DDATAOFF += abs(sz);
     }
     else {
-        var_area[var_count].a = DATAOFF;
-        var_area[var_count].sz = sz;
+        var_area[vpos].a = DATAOFF;
+        var_area[vpos].sz = sz;
         DATAOFF += sz;
     }
-    var_count++;
-    
+
+    if (vpos == var_count) {
+        var_count++;
+    }
+}
+
+void mark(int mem) {
+    for (int i = 0; i < var_count; i++) {
+        if (var_area[i].a == mem) {
+            var_area[i].reuse = 1;
+            break;
+        }
+    }
 }
 
 int get_var(char* s) {
@@ -329,6 +353,7 @@ void cmp(short l1, short l2, char em) {
         for (int j = 0; j < l1; j++) {
             printf("%c", (char) mem[l22 + j]);
         }
+        mark(l22);      /* to be reused */
         break;
     }
     flags = flags << 2;
@@ -387,7 +412,11 @@ void prcols(int c, int sz) {
         for (int i = 0; i < c; i++) {
             pp = 0;
             if (var_area[i + c * j].sz) {
-                printf("%s\t @%04d\t{%02d}\t", var_area[i + c * j].sym, var_area[i + c * j].a, var_area[i + c * j].sz);
+                printf("%s\t @%04d%s\t{%02d}\t", 
+                    var_area[i + c * j].sym, 
+                    var_area[i + c * j].a,
+                    (var_area[i + c * j].reuse == 1) ? "*" : "",
+                    var_area[i + c * j].sz);
                 pp = 1;
             }
         }
@@ -396,10 +425,14 @@ void prcols(int c, int sz) {
     if (l2) {
         for (int j = 0; j < sz - c * l1; j++) {
             if (var_area[c * l1 + j].sz)
-                printf("%s\t @%04d\t{%02d}\t", var_area[c * l1 + j].sym, var_area[c * l1 + j].a, var_area[c * l1 + j].sz);
+                printf("%s\t @%04d%s\t{%02d}\t", 
+                    var_area[c * l1 + j].sym, 
+                    var_area[c * l1 + j].a,
+                    (var_area[c * l1 + j].reuse == 1) ? "*" : "",
+                    var_area[c * l1 + j].sz);
         }
     }
-    printf("--------------\n");
+    printf("\n--------------\n");
     printf("DATA DUMP\n");
     for (int j = 0; j < l1; j++) {
         for (int i = 0; i < c; i++) {
@@ -412,7 +445,7 @@ void prcols(int c, int sz) {
             printf("[%02d]: % lld\t", DATAORIG + j, mem[DATAORIG + c * l1 + j]);
         }
     }
-    printf("--------------\n");
+    printf("\n--------------\n");
     printf("FP DATA DUMP\n");
     for (int j = 0; j < l1; j++) {
         for (int i = 0; i < c; i++) {
@@ -425,7 +458,7 @@ void prcols(int c, int sz) {
             printf("[%02d]: % lf\t", 1024 + j, dmem[1024 + c * l1 + j]);
         }
     }
-    printf("--------------\n");
+    printf("\n--------------\n");
     printf("MEMORY DUMP\n");
     for (int j = 0; j < l1; j++) {
         int pp = 0;
@@ -443,7 +476,7 @@ void prcols(int c, int sz) {
             printf("[%02d]: %010lld\t", j, mem[c * l1 + j]);
         }
     }
-    printf("--------------\n");
+    printf("\n--------------\n");
     printf("BIN MEMORY DUMP\n");
     for (int i = 0; i < sz; i++) {
         if (mem[i])
@@ -835,7 +868,6 @@ void loadp(char* fn) {
         }
         else if (strcmp(instr, "CMP") == 0) {
             /* walk through other tokens */
-            //r15 = 0;
             
             er15 = 0;
             tok = strtok(NULL, "|");
