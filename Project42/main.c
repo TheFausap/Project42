@@ -755,11 +755,40 @@ void loadp(char* fn) {
             tok = strtok(NULL, "|");
             strcpy(v, tok);
             if (isalpha(v[0])) {
-                //DH(v); 
-                DT(v);
-                
-                v1 = get_var(v);
-                ind[loc] = 1;
+                if ((ipos = strstr(v, "#")) != NULL) {
+                    /* variable indexing */
+                    strcpy(varline, v);
+                    char* res = strchr(varline, '#');
+                    strcpy(idx, res);
+                    DH(idx);
+                    if (isalpha(idx[0])) {
+                        idx1 = get_var(idx);
+                        indexes[loc] = idx1;
+                        varline[(res - varline)] = '\0';
+                        strcpy(v, varline);
+                        v1 = get_var(v);
+                    }
+                    else {
+                        idx1 = atoi(idx);
+                        varline[(res - varline)] = '\0';
+                        strcpy(v, varline);
+                        v1 = get_var(v) + idx1;
+                    }
+                    ind[loc] = 1;
+                }
+                /* Can be a registry */
+                else if (v[0] == 'R') {
+                    switch (v[1]) {
+                    case '0':
+                        v1 = -1;
+                        break;
+                    case '1':
+                        v1 = -2;
+                    }
+                }
+                else {
+                    v1 = get_var(m);
+                }
             }
             else
                 v1 = atoi(v);
@@ -811,14 +840,43 @@ void loadp(char* fn) {
             tok = strtok(NULL, "|");
             strcpy(v, tok);
             if (isalpha(v[0])) {
-                //DH(v); 
-                DT(v);
-                v1 = get_var(v);
-                ind[loc] = 1;
+                if ((ipos = strstr(v, "#")) != NULL) {
+                    /* variable indexing */
+                    strcpy(varline, v);
+                    char* res = strchr(varline, '#');
+                    strcpy(idx, res);
+                    DH(idx);
+                    if (isalpha(idx[0])) {
+                        idx1 = get_var(idx);
+                        indexes[loc] = idx1;
+                        varline[(res - varline)] = '\0';
+                        strcpy(v, varline);
+                        v1 = get_var(v);
+                    }
+                    else {
+                        idx1 = atoi(idx);
+                        varline[(res - varline)] = '\0';
+                        strcpy(v, varline);
+                        v1 = get_var(v) + idx1;
+                    }
+                    ind[loc] = 1;
+                }
+                /* Can be a registry */
+                else if (v[0] == 'R') {
+                    switch (v[1]) {
+                    case '0':
+                        v1 = -1;
+                        break;
+                    case '1':
+                        v1 = -2;
+                    }
+                }
+                else {
+                    v1 = get_var(m);
+                }
             }
             else
                 v1 = atoi(v);
-
             if (m1 < 0) v1 += 1;
             mem[loc] = enc(INC, m1, v1);
         }
