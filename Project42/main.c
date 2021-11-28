@@ -946,6 +946,26 @@ void loadp(char* fn) {
                     m1 = DR0 + DATAORIG;
                 else if (strcmp(m, "DR1") == 0)
                     m1 = DR1 + DATAORIG;
+                else if (strstr(m, "#") != NULL) {
+                    strcpy(varline, m);
+                    char* res = strchr(varline, '#');
+                    strcpy(idx, res);
+                    DH(idx);
+                    if (isalpha(idx[0])) {
+                        idx1 = get_var(idx);
+                        indexes[loc] = idx1;
+                        varline[(res - varline)] = '\0';
+                        strcpy(m, varline);
+                        m1 = get_var(m);
+                    }
+                    else {
+                        /* numerical index */
+                        idx1 = atoi(idx);
+                        varline[(res - varline)] = '\0';
+                        strcpy(m, varline);
+                        m1 = get_var(m) + idx1;
+                    }
+                }
                 else
                     m1 = get_var(m);
             }
