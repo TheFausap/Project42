@@ -71,12 +71,14 @@ enum {NOP=0,STO,LDM,JMP,DEC,INC,JNZ,CMP};
 #define EQL 4
 #define NEQ 40  /* 7 bit of flags to 1 */
 
-#define DBL 5   /* used to store a double val in dr0 or dr1 */
-#define DADD 50 /* perform the related arith operation */
-#define DSUB 51 /* perform the related arith operation */
-#define DMUL 52 /* perform the related arith operation */
-#define DDIV 53 /* perform the related arith operation */
-#define DMOV 54 /* move double data from reg R0 or R1 into DMEM */
+#define DBL   5  /* used to store a double val in dr0 or dr1 */
+#define DADD  50 /* perform the related arith operation */
+#define DSUB  51 /* perform the related arith operation */
+#define DMUL  52 /* perform the related arith operation */
+#define DDIV  53 /* perform the related arith operation */
+#define DMOV  54 /* move double data from reg R0 or R1 into DMEM */
+/* esoteric operations */
+#define DDIVN 80 /* normalizes division: no inf */
 
 #define OUTB 6  /* 6+ 0 printing byte */
 #define OUTA 7  /* 6+ 2 printing array of byte (num or str) */
@@ -241,6 +243,11 @@ void ddiv(void) {
     dr0 /= dr1;
 }
 
+void ddivn(void) {
+    if (dr1 != 0.0)
+        dr0 /= dr1;
+}
+
 void jmp(int ad) {
     if (ind[pc]) {
         pc = labels[ad].a - 1;
@@ -330,6 +337,9 @@ void cmp(short l1, short l2, char em) {
                 break;
             case DDIV:
                 ddiv();
+                break;
+            case DDIVN:
+                ddivn();
                 break;
             case DMOV:
                 /* no address conversion needed */
@@ -946,6 +956,8 @@ void loadp(char* fn) {
                     m1 = DMUL + DATAORIG;
                 else if (strcmp(m, "DDIV") == 0)
                     m1 = DDIV + DATAORIG;
+                else if (strcmp(m, "DDIVN") == 0)
+                    m1 = DDIVN + DATAORIG;
                 else if (strcmp(m, "DMOV") == 0)
                     m1 = DMOV + DATAORIG;
                 else if (strcmp(m, "DR0") == 0)
