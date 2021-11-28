@@ -117,20 +117,26 @@ void var(char* s, int sz) {
     }
     
     strncpy(var_area[vpos].sym, s, 9);
+
     if (sz < 0) {
         /* negative size means floating-point variable */
-        var_area[vpos].a = DDATAOFF;
-        var_area[vpos].sz = sz;
+        for (int i = 0; i < abs(sz); i++) {
+            var_area[vpos+i].a = DDATAOFF+i;
+            var_area[vpos+i].sz = sz;
+        }
+        
         DDATAOFF += abs(sz);
     }
     else {
-        var_area[vpos].a = DATAOFF;
-        var_area[vpos].sz = sz;
+        for (int i = 0; i < sz; i++) {
+            var_area[vpos+i].a = DATAOFF + i;
+            var_area[vpos+i].sz = sz;
+        }
         DATAOFF += sz;
     }
 
     if (vpos == var_count) {
-        var_count++;
+        var_count += abs(sz);
     }
 }
 
@@ -341,11 +347,11 @@ void cmp(short l1, short l2, char em) {
         else {
             if (get_size(l2) > 0) {
                 for (int i = 0; i <= l1; i++)
-                    printf("%lld", mem[l22 + i]);
+                    printf("%lld ", mem[l22 + i]);
             }
             else {
                 for (int i = 0; i < abs(get_size(l2)); i++)
-                    printf("%lf", dmem[l2 + i]);
+                    printf("%lf ", dmem[l2 + i]);
             }
         }
         break;
@@ -1126,7 +1132,7 @@ int main(int argc, char **argv) {
         pc++;
     }
     
-    if (fl_d) prcols(3, 30);
+    if (fl_d) prcols(3, 50);
 
     return 0;
 }
