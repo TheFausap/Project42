@@ -1118,7 +1118,7 @@ int main(int argc, char **argv) {
         {0, 0, 0, 0}
     };
 
-    while ((c = getopt_long(argc, argv, "-d::l", long_options, &opt)) != -1) {
+    while ((c = getopt_long(argc, argv, "-dl::", long_options, &opt)) != -1) {
         switch (c) {
         case 0:
             printf("long option %s", long_options[opt].name);
@@ -1132,11 +1132,11 @@ int main(int argc, char **argv) {
             break;
         case 'd':
             fl_d++;
-            if (optarg != NULL)
-                lsize = atoi(optarg);
             break;
         case 'l':
             fl_l++;
+            if (optarg != NULL)
+                lsize = atoi(optarg);
             break;
         }
     }
