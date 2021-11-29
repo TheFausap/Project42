@@ -1108,16 +1108,17 @@ void loadp(char* fn) {
 int main(int argc, char **argv) {
     int opt;
     int c;
+    int lsize = 50;
     
     char fn[20];
 
     static struct option long_options[] = {
         {"debug", 0, 0, 'd'},
-        {"list", 0, 0, 'l'},
+        {"list", 2, 0, 'l'},
         {0, 0, 0, 0}
     };
 
-    while ((c = getopt_long(argc, argv, "-dl", long_options, &opt)) != -1) {
+    while ((c = getopt_long(argc, argv, "-d::l", long_options, &opt)) != -1) {
         switch (c) {
         case 0:
             printf("long option %s", long_options[opt].name);
@@ -1131,6 +1132,8 @@ int main(int argc, char **argv) {
             break;
         case 'd':
             fl_d++;
+            if (optarg != NULL)
+                lsize = atoi(optarg);
             break;
         case 'l':
             fl_l++;
@@ -1144,7 +1147,7 @@ int main(int argc, char **argv) {
         pc++;
     }
     
-    if (fl_d) prcols(3, 50);
+    if (fl_d) prcols(3, lsize);
 
     return 0;
 }
