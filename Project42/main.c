@@ -11,6 +11,7 @@
 #include <ctype.h>
 #include "getopt.h"
 
+#define PMEMSIZE 65535
 #define MEMSIZE 32767
 #define DATAORIG 2048
 #define STACKORIG DATAORIG-256
@@ -21,7 +22,7 @@
 #define MAXVAR 100
 #define MAXLAB 100
 
-long long int mem[MEMSIZE] = { 0 };
+long long int mem[PMEMSIZE] = { 0 };
 long double dmem[MEMSIZE] = { 0.0 };
 short dmemp = 0;
 
@@ -386,29 +387,6 @@ void jnz(int ad) {
     }
 }
 
-//void pmem(int sz) {
-//    printf("\n");
-//    for (int i = 0; i < sz; i++) {
-//        printf("MEM\t[%d]:\t%lld\n", i, mem[i]);
-//    }
-//
-//    printf("R0: %lld\n", r0);
-//    printf("R1: %lld\n", r1);
-//
-//    printf("DR0: %Lf\n", dr0);
-//    printf("DR1: %Lf\n", dr1);
-//
-//    for (int i = 0; i < sz; i++) {
-//        printf("DATA\t[%d]:\t%lld\n", DATAORIG + i, mem[DATAORIG + i]);
-//    }
-//    for (int i = 0; i < sz; ++i) {
-//        printf("FDATA\t[%d]:\t%Lf\n", 1024 + i, dmem[1024 + i]);
-//    }
-//    for (int i = 0; i < sz; i++) {
-//        printf("VAR\t[%d]:\t%s\tMEM[%d]\t%d\n", i, var_area[i].sym, var_area[i].a, var_area[i].sz);
-//    }
-//}
-
 void prcols(int c, int sz) {
     printf("\n");
     int l1 = sz / c;
@@ -501,7 +479,6 @@ void prcols(int c, int sz) {
     printf("--------------\n");
 }
     
-
 int readp(int a) {
     int inst = mem[a] & 7;
     short m = mem[a] >> 3 & 0xffff;
@@ -606,6 +583,11 @@ void loadp(char* fn) {
     if (f == NULL) exit(-10);
 #endif
     while (fgets(l, len, f) != NULL) {
+        if (loc > PMEMSIZE) {
+            printf("PMEM\n");
+            exit(-90);
+        }
+
         if (fl_l) printf("LINE\t(%d):\t%s", loc, l);
     
         /* get the first token */
@@ -1099,6 +1081,8 @@ void loadp(char* fn) {
         loc++;
     }
     if (fl_l) printf("\nEnd of listing\n");
+    if (fl_l) printf("Used %d pogram memory locations\n", loc);
+
     free(l);
     free(m);
     free(v);
